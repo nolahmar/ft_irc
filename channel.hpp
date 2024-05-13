@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <vector>
 
+class client;
 class channel
 {
     private:
@@ -21,6 +22,7 @@ class channel
         std::string Key;
         std::string Topic;
         std::vector<channel*> channels;
+        std::vector<client*> Operators;
 
     public:
     channel(std::string& Name, client * owner, std::string topic);
@@ -31,6 +33,11 @@ class channel
     void send_msg(const std::string& sender, const std::string& message, client* senderClient) const;
     bool is_member(client* user) const;
     channel* getChannel();
+    void remove_user(client* client);
+    void remove_operator(client* client);
+    bool is_operator(client* client) const;
+    void add_user(client* client);
+    void process_whois_response(const std::string& response) const;
 
 };
 

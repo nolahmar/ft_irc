@@ -33,6 +33,13 @@ class client
     void write(const std::string& message) const;
     const std::string& getNickname() const;
     client* getClient(const std::string& nickname) const;
+    void sendPong(const std::string& token);
+    void send_whois(const std::string& target, const std::string& nickname);
+    bool is_authorized_for_whois() const;
+    void send_to_server(const std::string& message) const;
+    std::string wait_for_response() const;
+    void process_whois_response(const std::string& response) const;
+
 };
 
 #endif
