@@ -75,3 +75,7 @@ client* client::getClient(const std::string& nickname) const {
     }
     return nullptr;
 }
+
+void client::join_channel(channel* channel) {
+	ChannelPtr = channel;
+}

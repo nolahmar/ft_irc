@@ -3,9 +3,11 @@
 
 //santax: PART <channel> <reason>
 void channel::remove_user(client* client) {
-    std::vector<client *>::iterator it = std::find(Users.begin(), Users.end(), client);
-    if (it != Users.end()) {
-        Users.erase(it);
+    for (size_t i = 0; i < Users.size(); ++i) {
+        if (Users[i] == client) {
+            Users.erase(Users.begin() + i);
+            break;
+        }
     }
 }
 

@@ -21,8 +21,9 @@ class client
         std::string username;
         std::string realname;
         std::string hostname;
-        std::vector<channel*>  channel;
+        std::vector<channel*>  channels;
         std::vector<client*> clients;
+        channel* ChannelPtr;
         
     public:
     client(int fd);
@@ -39,6 +40,9 @@ class client
     void send_to_server(const std::string& message) const;
     std::string wait_for_response() const;
     void process_whois_response(const std::string& response) const;
+    void invite_to_channel(client* invitedClient, channel* channel);
+    void join_channel(channel* channel);
+    void quit_network(client* client, const std::string& reason) const;
 
 };
 

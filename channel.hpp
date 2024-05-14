@@ -10,6 +10,7 @@
 #include <cstdlib> 
 #include <stdio.h>
 #include <vector>
+#include <algorithm>
 
 class client;
 class channel
@@ -18,7 +19,7 @@ class channel
         std::string Name;
         std::vector<client *>  Admin;
         client  *Owner;
-        std::vector<client*>  Users;
+        std::vector<client*> Users;
         std::string Key;
         std::string Topic;
         std::vector<channel*> channels;
@@ -38,6 +39,8 @@ class channel
     bool is_operator(client* client) const;
     void add_user(client* client);
     void process_whois_response(const std::string& response) const;
+    const std::string& getName() const;
+    void send_notice(const std::string& sender, const std::string& notice) const;
 
 };
 

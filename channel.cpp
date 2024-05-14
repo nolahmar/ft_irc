@@ -47,17 +47,10 @@ channel* channel::getChannel() {
     return nullptr;
 }
 
-void channel::remove_operator(client* client) {
-        auto it = std::find(Operators.begin(), Operators.end(), client);
-        if (it != Operators.end()) {
-            Operators.erase(it);
-        }
-    }
-
-bool channel::is_operator(client* client) const {
-        return std::find(Operators.begin(), Operators.end(), client) != Operators.end();
-    }
-
 void channel::add_user(client* client) {
         Users.push_back(client);
     }
+
+const std::string& channel::getName() const {
+	return Name;
+}
