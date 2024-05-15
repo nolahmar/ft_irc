@@ -10,7 +10,7 @@ void client::write(const std::string& message) const {
 void channel::send_msg(const std::string& sender, const std::string& message, client* senderClient) const {
     std::cout << "Message envoyé au canal " << Name << " par " << sender << " : " << message << std::endl;
     for (size_t i = 0; i < Users.size(); ++i) {
-        if (Users[i] != nullptr && Users[i] != senderClient) {
+        if (Users[i] != senderClient) {
             Users[i]->write(sender + " : " + message);
         }
     }
@@ -25,7 +25,7 @@ bool channel::is_member(client* user) const {
     return false;
 }
 
-void privmsg(client* sender, const std::vector<std::string>& args){
+void privmsg(client* sender, channel* cannel, const std::vector<std::string>& args){
     if (args.size() < 2 || args[0].empty() || args[1].empty()) {
         sender->write("ERR_NEEDMOREPARAMS " + sender->getNickname() + " PRIVMSG");
         return;
@@ -35,8 +35,7 @@ void privmsg(client* sender, const std::vector<std::string>& args){
     std::string message = args[1];
 
     if (target[0] == '#') {
-        channel currentChannel;
-        channel* chan = currentChannel.getChannel();
+        channel* chan = cannel->getChannel();
         if (!chan) {
             sender->write("ERR_NOSUCHCHANNEL " + sender->getNickname() + " " + target);
             return;

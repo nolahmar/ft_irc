@@ -2,6 +2,7 @@
 #include "channel.hpp"
 
 //santax: PART <channel> <reason>
+
 void channel::remove_user(client* client) {
     for (size_t i = 0; i < Users.size(); ++i) {
         if (Users[i] == client) {

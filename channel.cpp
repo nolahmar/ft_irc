@@ -40,7 +40,7 @@ channel::~channel()
 
 channel* channel::getChannel() {
     for (size_t i = 0; i < channels.size(); ++i) {
-        if (channels[i]->Name == Name) {
+        if (channels[i]->Name == this->Name) {
             return channels[i];
         }
     }

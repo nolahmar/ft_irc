@@ -1,7 +1,7 @@
 #include "client.hpp"
 #include "channel.hpp"
 
-//santax: NOTIC <target> <msg>
+//santax: NOTIC <target> <texte a envoyer>
 
 void channel::send_notice(const std::string& sender, const std::string& notice) const {
     std::cout << "Notice envoyé au canal " << Name << " par " << sender << " : " << notice << std::endl;
