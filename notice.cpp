@@ -10,7 +10,7 @@ void channel::send_notice(const std::string& sender, const std::string& notice) 
     }
 }
 
-void notice(client* sender, const std::vector<std::string>& args) {
+void notice(client* sender, channel* cannel, const std::vector<std::string>& args) {
     if (args.size() < 2 || args[0].empty() || args[1].empty()) {
         sender->write("ERR_NEEDMOREPARAMS " + sender->getNickname() + " NOTICE");
         return;
@@ -20,7 +20,7 @@ void notice(client* sender, const std::vector<std::string>& args) {
     std::string notice = args[1];
 
     if (target[0] == '#') {
-        channel* chan = chan->getChannel();
+        channel* chan = cannel->get_channel_by_name(target) ;
         if (!chan) {
             sender->write("ERR_NOSUCHCHANNEL " + sender->getNickname() + " " + target);
             return;

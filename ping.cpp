@@ -2,7 +2,7 @@
 #include "channel.hpp"
 
 //santax: PING <token>
-void client::sendPong(const std::string& token) {
+void client::send_pong(const std::string& token) {
         write("PONG :" + token);
 }
 
@@ -13,5 +13,5 @@ void client::sendPong(const std::string& token) {
         }
 
         std::string token = args[0];
-        client->sendPong(token);
+        client->send_pong(token);
  }

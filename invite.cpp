@@ -3,12 +3,20 @@
 
 //santax: INVITE <nickname> <channel>
 
+channel* channel::get_channel_by_name(const std::string& channelName) {
+    for (std::vector<channel*>::iterator it = channels.begin(); it != channels.end(); ++it) {
+        if ((*it)->getName() == channelName) {
+            return *it;
+        }
+    }
+    return nullptr;
+}
+
 void client::invite_to_channel(client* invitedClient, channel* channel) {
     if (!channel) {
         write("ERR_NOSUCHCHANNEL " + nickname + " " + channel->getName());
         return;
     }
-
     if (!channel->is_member(this)) {
         write("ERR_NOTONCHANNEL " + nickname + " " + channel->getName());
         return;
@@ -26,7 +34,7 @@ void client::invite_to_channel(client* invitedClient, channel* channel) {
     write("RPL_INVITING " + channel->getName());
 }
 
-void invite(client* sender, const std::vector<std::string>& args) {
+void invite(client* sender, channel* cannel, const std::vector<std::string>& args) {
     if (args.size() < 2) {
         sender->write("ERR_NEEDMOREPARAMS " + sender->getNickname() + " INVITE");
         return;
@@ -42,7 +50,7 @@ void invite(client* sender, const std::vector<std::string>& args) {
         return;
     }
 
-    channel* chan = chan->getChannel();
+    channel* chan = cannel->get_channel_by_name(channelName);
     if (!chan) {
         sender->write("ERR_NOSUCHCHANNEL " + sender->getNickname() + " " + channelName);
         return;

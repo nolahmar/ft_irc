@@ -41,7 +41,7 @@ class channel
     void process_whois_response(const std::string& response) const;
     const std::string& getName() const;
     void send_notice(const std::string& sender, const std::string& notice) const;
-
+    channel* get_channel_by_name(const std::string& channelName);
 };
 
 #endif

@@ -12,26 +12,30 @@ void channel::remove_user(client* client) {
     }
 }
 
-void part(client* client, const std::vector<std::string>& args) {
-        if (args.empty()) {
-            client->write("ERR_NEEDMOREPARAMS " + client->getNickname() + " PART");
-            return;
+void part(client* client, std::vector<channel*>& allChannels, const std::vector<std::string>& args) {
+    if (args.empty()) {
+        client->write("ERR_NEEDMOREPARAMS " + client->getNickname() + " PART");
+        return;
+    }
+
+    for (std::vector<std::string>::const_iterator it = args.begin(); it != args.end(); ++it) {
+        const std::string& channelName = *it;
+        bool foundChannel = false;
+        for (std::vector<channel*>::iterator chan_it = allChannels.begin(); chan_it != allChannels.end(); ++chan_it) {
+            channel* chan = *chan_it;
+            if (chan->getName() == channelName) {
+                foundChannel = true;
+                if (!chan->is_member(client)) {
+                    client->write("ERR_NOTONCHANNEL " + client->getNickname() + " " + channelName);
+                } else {
+                    chan->remove_user(client);
+                    client->write("Vous avez quitté le canal " + channelName);
+                }
+                break;
+            }
         }
-
-        for (std::vector<std::string>::const_iterator it = args.begin(); it != args.end(); ++it)  {
-            const std::string& channelName = *it;
-            channel* chan = chan->getChannel();
-            if (!chan) {
-                client->write("ERR_NOSUCHCHANNEL " + client->getNickname() + " " + channelName);
-                continue;
-            }
-
-            if (!chan->is_member(client)) {
-                client->write("ERR_NOTONCHANNEL " + client->getNickname() + " " + channelName);
-                continue;
-            }
-
-            chan->remove_user(client);
-            client->write("Vous avez quitté le canal " + channelName);
+        if (!foundChannel) {
+            client->write("ERR_NOSUCHCHANNEL " + client->getNickname() + " " + channelName);
         }
     }
+}
