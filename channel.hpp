@@ -24,6 +24,7 @@ class channel
         std::string Topic;
         std::vector<channel*> channels;
         std::vector<client*> Operators;
+        std::string Modes;
 
     public:
     channel(std::string& Name, client * owner, std::string topic);
@@ -42,6 +43,11 @@ class channel
     const std::string& getName() const;
     void send_notice(const std::string& sender, const std::string& notice) const;
     channel* get_channel_by_name(const std::string& channelName);
+    void add_mode(char mode);
+    void remove_mode(char mode);
+    const std::string& getModes() const;
+    void remove_user(client* client);
+    std::vector<client*>& getUsers();
 };
 
 #endif

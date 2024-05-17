@@ -58,6 +58,5 @@ void whois(client* client, const std::vector<std::string>& args){
             target = args[0];
             nickname = args[1];
         }
-
         client->send_whois(target, nickname);
 }
