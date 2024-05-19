@@ -1,81 +1,147 @@
 #include "client.hpp"
 #include "channel.hpp"
 
-client::client(int fd)
-{
-	std::cout << "constrctor dinislisation" << std::endl;
-}
-
 client::client()
 {
-	std::cout<< "constrctor par defaut" << std::endl;
+	state = "none"; // pass - usernam mazl medkhl
+	
 }
 
-client::client(const  client &orginal)
+client::client(const client &orginal)
 {
-	std::cout << "constrctor par copier" << std::endl;
+	
 	*this = orginal;
 }
 
 client &client::operator=(const client &orginal)
 {
-	std::cout << "operator assinment" << std::endl;
-	if(this != &orginal)
+	
+	if (this != &orginal)
 	{
 		this->fd = orginal.fd;
 		this->nickname = orginal.nickname;
 		this->username = orginal.username;
 		this->realname = orginal.realname;
-
 	}
 
 	return *this;
 }
 
-// stntax: USER <username> <hostname> <servername> <realname>
+void client::sendMessage(const std::string& message) {
+        std::cout << "Sending message to client: " << message << std::endl;
+}
 
-// void client::User(const std::string &userCmd)
-// {
-// 	std::istringstream iss(userCmd);
+void client::quiter()
+{
+	if (channels != nullptr)
+    {
+        channels->remove_client(this);
+        channels = nullptr;
+    }
+}
 
-// 	std::string cmd;
-// 	std::string	uname;
-// 	std::string	hname;
-// 	std::string	Nname;
-// 	std::string	rname;
+void client::quit_network(std::map<int, client>& clients, int fd, const std::string& reason) const {
+    for (std::vector<channel*>::iterator it = channels.begin(); it != channels.end(); ++it) {
+        channel* channel = *it;
+        channel->remove_client(client);
+    }
+    std::cout << "ERROR: Closing Link: <servername> (Killed by operator (" << reason << "))" << std::endl;
+}
 
-// 	iss >> cmd >> uname >> hname >> Nname >>  rname ;
-// 	this->username = uname;
-// 	this->hostname = hname;
-// 	this->realname = rname;
-// 	this->nickname = Nname;
-// 	std::getline(iss,rname);
+void client::invite_to_channel(client* invitedClient, channel* channel) {
+    if (!channel) {
+        write("ERR_NOSUCHCHANNEL " + nickname + " " + channel->getName());
+        return;
+    }
+    if (!channel->is_member(this)) {
+        write("ERR_NOTONCHANNEL " + nickname + " " + channel->getName());
+        return;
+    }
 
-// 	std::cout << "user details :\n" ;
-// 	std::cout << "nickname: " <<  username << "\n" ;
-// 	std::cout << "hostname: " << hostname << "\n";
-// 	std::cout << "realname: " << realname << "\n" ;
-// 	std::cout << "hostname: " << hostname << "\n" ;
-// }
+    if (channel->is_member(invitedClient)) {
+        write("ERR_USERONCHANNEL " + nickname + " " + channel->getName());
+        return;
+    }
+    // Envoyer un message d'invitation à l'utilisateur invité
+    invitedClient->write("INVITE " + nickname + " " + channel->getName());
+    invitedClient->join_channel(channel);
+
+    // Envoyer un message de confirmation à l'utilisateur qui a envoyé l'invitation
+    write("RPL_INVITING " + channel->getName());
+}
+
+int client::get_fd() const
+{
+	return fd;
+}
+
+
+
+std::string client::is_registered()
+{
+    return state;
+}
+
+std::string client::get_password() const 
+{
+	return this->password;
+}
+
+void client::set_registered(std::string status)
+{
+        this->state = status;
+}
+
+std::string client::get_nickname() const
+{
+	return nickname;
+}
+std::string client::get_username() const
+{
+	return username;
+}
+std::string client::get_realname() const
+{
+	return realname;
+}
+std::string client::get_hostname() const
+{
+	return hostname;
+}
+
+std::vector<channel *> client::get_channel() const
+{
+	return channels;
+}
+
+/* Setters */
+
+void client::set_nickname(const std::string nickn)
+{
+	this->nickname = nickn;
+}
+
+void client::set_username(const std::string usern)
+{
+	this->username = usern;
+}
+
+void client::set_realname(const std::string realn)
+{
+	this->realname = realn;
+}
+
+void client::set_hostname(const std::string hostn)
+{
+	this->hostname = hostn;
+}
+
+void client::set_channel(const std::vector<channel *> chan)
+{
+	this->channels = chan;
+}
 
 client::~client()
 {
 	std::cout << "Destrctor" << std::endl;
-}
-
-const std::string& client::getNickname() const {
-        return nickname;
-    }
-
-client* client::getClient(const std::string& nickname) const {
-    for (size_t i = 0; i < clients.size(); ++i) {
-        if (clients[i]->getNickname() == nickname) {
-            return clients[i];
-        }
-    }
-    return nullptr;
-}
-
-void client::join_channel(channel* channel) {
-	ChannelPtr = channel;
 }

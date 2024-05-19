@@ -10,44 +10,39 @@
 #include <cstdlib> 
 #include <stdio.h>
 #include <vector>
-#include <algorithm>
 
-class client;
 class channel
 {
     private:
         std::string Name;
-        std::vector<client *>  Admin;
-        client  *Owner;
-        std::vector<client*> Users;
+        int Owner;
+        std::vector<int>  Users;
         std::string Key;
         std::string Topic;
-        std::vector<channel*> channels;
-        std::vector<client*> Operators;
-        std::string Modes;
-
     public:
-    channel(std::string& Name, client * owner, std::string topic);
-    channel();
-    channel(const  client &orginal);
-    ~channel();
-    channel & operator=(const channel &orginal);
-    void send_msg(const std::string& sender, const std::string& message, client* senderClient) const;
-    bool is_member(client* user) const;
-    channel* getChannel();
-    void remove_user(client* client);
-    void remove_operator(client* client);
-    bool is_operator(client* client) const;
-    void add_user(client* client);
-    void process_whois_response(const std::string& response) const;
-    const std::string& getName() const;
-    void send_notice(const std::string& sender, const std::string& notice) const;
-    channel* get_channel_by_name(const std::string& channelName);
-    void add_mode(char mode);
-    void remove_mode(char mode);
-    const std::string& getModes() const;
-    void remove_user(client* client);
-    std::vector<client*>& getUsers();
+        std::vector<int>  Admin;
+        channel(std::string& name, int owner, std::string topic, std::string key);
+        channel();
+        channel(const channel &orginal);
+        channel & operator=(const channel &orginal);
+        std::string get_name() const;
+        std::string get_key() const;
+        std::string get_Topic() const;
+        std::vector<int>  &getadmin();
+        int getOwner() const;
+        std::vector<int> &get_Users();
+        void set_name(const std::string  namee);
+        void set_key(const std::string keyy);
+        void set_topic(const std::string topic);
+        void set_Admin(const std::vector<int> &admin);
+        void set_Owner(const int owner);
+        void set_Users(const std::vector<int> users);
+        void addUser(int userId);
+        void broadcast(const std::string& message, Client* exclu);
+        void remove_client(client* client);
+        bool is_member(client* user) const ;
+        channel* get_channel_by_name(const std::string& channelName, const std::vector<channel*>& channels);
+        ~channel();
 };
 
 #endif

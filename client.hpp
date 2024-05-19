@@ -1,6 +1,8 @@
 #ifndef client_hpp
 #define  client_hpp
 
+#include <iostream>
+#include <sstream>
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
@@ -9,41 +11,49 @@
 #include <cstdlib> 
 #include <stdio.h>
 #include <vector>
-#include "channel.hpp"
+#include<map>
 
 class channel;
 class client
 {
     private:
+        std::string state;
         int fd;                                                                                                                                                                                                                                                                                                                                 
-        //std::string port;
+        std::string port;
         std::string nickname;
         std::string username;
         std::string realname;
         std::string hostname;
-        std::vector<channel*>  channels;
-        std::vector<client*> clients;
-        channel* ChannelPtr;
-        
-    public:
-    client(int fd);
-    client();
-    client & operator=(const client &orginal);
-    ~client();
-    void User(const std::string &userCmd);
-    void write(const std::string& message) const;
-    const std::string& getNickname() const;
-    client* getClient(const std::string& nickname) const;
-    void send_pong(const std::string& token);
-    void send_whois(const std::string& target, const std::string& nickname);
-    bool is_authorized_for_whois() const;
-    void send_to_server(const std::string& message) const;
-    std::string wait_for_response() const;
-    void process_whois_response(const std::string& response) const;
-    void invite_to_channel(client* invitedClient, channel* channel);
-    void join_channel(channel* channel);
-    void quit_network(client* client, const std::string& reason) const;
+        std::string password;
 
+    public:
+    /* Getters */
+        std::vector<channel*>  channels;
+
+        int             get_fd() const;
+        int             get_port() const;
+        std::string     get_nickname() const;
+        std::string     get_username() const;
+        std::string     get_realname() const;
+        std::string     get_hostname() const;
+        std::vector<channel*>       get_channel() const;
+        std::string is_registered();
+        std::string get_password() const;
+        void sendMessage(const std::string& message);
+        void quiter();
+        void invite_to_channel(client* invitedClient, channel* channel);
+
+    /**setes*/
+        void            set_nickname(const std::string nickn);
+        void            set_username(const std::string usern);
+        void            set_realname(const std::string realn);
+        void            set_hostname(const std::string hostn);
+        void            set_channel(const std::vector<channel*> chan);
+        void            set_registered(std::string status);
+        client();
+        client & operator=(const client &orginal);
+        client(const client &orginal);
+        ~client();
 };
 
 #endif
