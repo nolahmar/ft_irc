@@ -31,13 +31,14 @@ class command
 	void ft_nick(std::vector<std::string> parametres ,std::map< int ,client> &clients ,int fd);
 	void ft_topic(std::vector<std::string> parametres , std::map<int ,client> &clients ,int fd);
 	void ft_Quit(std::vector<std::string> parameters, std::map<int, client>& clients, int fd, std::vector<channel *>& channels);
-	void ft_privmsg(std::vector<std::string> args, std::map<int, Client>& clients, int fd);
+	void ft_privmsg(std::vector<std::string> args, std::map<int, client>& clients, int fd);
 	void ft_notice(std::vector<std::string> args, std::map<int, client>& clients, int fd);
-	void ft_ping(std::vector<std::string> args, std::map<int, Client>& clients, int fd);
+	void ft_ping(std::vector<std::string> args, std::map<int, client>& clients, int fd);
 	void ft_part(std::vector<std::string> args, std::map<int, client>& clients, int fd);
 	void ft_kill(client* operatorClient, std::map<int, client>& clients, int fd, const std::string& reason);
 	void cap(const std::string& subcommand, const std::string& capabilities, int fd);
-	void invite(int fd, const std::vector<std::string>& args, std::map<int, Client>& clients, std::vector<Channel*>& channels);
+	void invite(int fd, const std::vector<std::string>& args, std::map<int, client>& clients, std::vector<channel*>& channels);
+	void mode(std::vector<std::string> args, std::map<int, client>& clients, std::vector<channel*>& channels, int fd);
 	// std::string welcomemsg(void);
 
 	~command();

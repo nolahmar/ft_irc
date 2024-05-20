@@ -32,36 +32,49 @@ channel &channel::operator=(const channel &orginal)
 
 	return *this;
 }
-void Channel::broadcast(const std::string& message, lient* exclu)
+void channel::broadcast(const std::string& message, client* exclu)
 {
-    client_iterator it_b = clients.begin();
-    client_iterator it_e = clients.end();
-
-    while (it_b != it_e)
+    for (auto it = clients.begin(); it != clients.end(); ++it)
     {
-        if (*it_b == exclu)
+        if (*it == exclu)
         {
-            it_b++;
             continue;
         }
 
-        (*it_b)->write(message);
-        it_b++;
+        (*it)->sendMessage(message);
     }
 }
 
-void Channel::remove_client(client* client)
+void channel::remove_client(const client* clientToRemove)
 {
-    std::vector<std::string>iterator::it = std::find(clients.begin(), clients.end(), client);
-    if (it != clients.end())
+    for (std::vector<client*>::iterator it = clients.begin(); it != clients.end();)
     {
-        clients.erase(it);
+        if (*it == clientToRemove)
+        {
+            it = clients.erase(it);
+            break;
+        }
+        else
+        {
+            ++it;
+        }
     }
+}
+
+client* channel::getClientById(int userId) const {
+    for (std::vector<client*>::const_iterator it = clients.begin(); it != clients.end(); ++it) {
+        if ((*it)->get_fd() == userId) {
+            return *it;
+        }
+    }
+    return nullptr;
 }
 
 bool channel::is_member(client* user) const {
+    std::string userNickname = user->get_nickname();
     for (size_t i = 0; i < Users.size(); ++i) {
-        if (Users[i] == user) {
+        client* currentUser = getClientById(Users[i]);
+        if (currentUser != nullptr && currentUser->get_nickname() == userNickname) {
             return true;
         }
     }
@@ -69,12 +82,20 @@ bool channel::is_member(client* user) const {
 }
 
 channel* channel::get_channel_by_name(const std::string& channelName, const std::vector<channel*>& channels) {
-    for (std::vector<Channel*>::iterator it = channels.begin(); it != channels.end(); ++it) {
-        if ((*it)->getName() == channelName) {
-            return *it;
+    for (size_t i = 0; i < channels.size(); ++i) {
+        if (channels[i]->get_name() == channelName) {
+            return channels[i];
         }
     }
     return nullptr;
+}
+
+bool channel::isExternalMessage() const {
+    return _allowExternalMessages;
+}
+
+void channel::setExternalMessage(bool allow) {
+    _allowExternalMessages = allow;
 }
 
 /* gesters*/
@@ -146,6 +167,10 @@ void channel::addUser(int userId)
    Users.push_back(userId);
 }
 
+void channel::set_limit(int limit)
+{
+    _limit = limit;
+}
 
 channel::~channel()
 {

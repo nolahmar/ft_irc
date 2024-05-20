@@ -13,6 +13,18 @@
 #include <vector>
 #include<map>
 
+#define ERR_NEEDMOREPARAMS(source, command)             "461 " + source + " " + command + " :Not enough parameters"
+#define ERR_NOSUCHCHANNEL(source, channel)              "403 " + source + " " + channel + " :No such channel"
+#define ERR_CANNOTSENDTOCHAN(source, channel)           "404 " + source + " " + channel + " :Cannot send to channel"
+#define RPL_PRIVMSG(source, target, message)            ":" + source + " PRIVMSG " + target + " :" + message
+#define ERR_NOSUCHNICK(source, nickname)                "401 " + source + " " + nickname + " :No such nick/channel"
+#define RPL_NOTICE(source, target, message)             ":" + source + " NOTICE " + target + " :" + message
+#define RPL_PING(source, token)                         ":" + source + " PONG :" + token
+#define RPL_MODE(source, channel, modes, args)          ":" + source + " MODE " + channel + " " + modes + " " + args
+#define ERR_CHANOPRIVSNEEDED(source, channel)           "482 " + source + " " + channel + " :You're not channel operator"
+#define ERR_NOTONCHANNEL(source, channel)               "442 " + source + " " + channel + " :You're not on that channel"
+
+
 class channel;
 class client
 {
@@ -25,6 +37,8 @@ class client
         std::string realname;
         std::string hostname;
         std::string password;
+        channel* ChannelPtr;
+        // std::vector<channel*>  channels;
 
     public:
     /* Getters */
@@ -42,6 +56,11 @@ class client
         void sendMessage(const std::string& message);
         void quiter();
         void invite_to_channel(client* invitedClient, channel* channel);
+        std::string get_prefix() const;
+        void write(const std::string& message) const;
+        void quit_network(std::map<int, client>& clients, int fd, const std::string& reason) const;
+        void join_channel(channel* channel);
+        void remove_channel(const channel* channelToRemove);
 
     /**setes*/
         void            set_nickname(const std::string nickn);

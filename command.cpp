@@ -115,7 +115,40 @@ void command::excute(const std::string& command,const std::vector<std::string>& 
 			
 			ft_topic(parameters,clients,fd);
 
-		}else
+		}
+		else if (command == "PRIVMSG")
+	{
+        ft_privmsg(parameters, clients, fd);
+    }
+	else if (command == "NOTICE")
+	{
+        ft_notice(parameters, clients, fd);
+    }
+	else if (command == "PING")
+	{
+        ft_ping(parameters, clients, fd);
+    }
+	else if (command == "PART")
+	{
+        ft_part(parameters, clients, fd);
+    }
+	else if (command == "KILL")
+	{
+        ft_kill(nullptr, clients, fd, "No reason given");
+    }
+	else if (command == "CAP")
+	{
+        cap(parameters[0], parameters[1], fd);
+    }
+	else if (command == "INVITE")
+	{
+        invite(fd, parameters, clients, channels);
+    }
+	else if (command == "MODE")
+	{
+        mode(parameters, clients, channels, fd);
+    }
+	else
 		{
 				ft_response(fd,"Unknown command: "); 
         }
@@ -664,12 +697,11 @@ void command::ft_privmsg(std::vector<std::string> args, std::map<int, client>& c
 {
     if (args.size() < 2 || args[0].empty() || args[1].empty())
     {
-        sendErrorMessage(fd, ERR_NEEDMOREPARAMS(clients[fd].getNickname(), "PRIVMSG"));
+        sendErrorMessage(fd, ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "PRIVMSG"));
         return;
     }
 
-    // extract the target and the message
-
+    // Extraire la cible et le message
     std::string target = args.at(0);
     std::string message;
 
@@ -681,53 +713,51 @@ void command::ft_privmsg(std::vector<std::string> args, std::map<int, client>& c
     if (message.at(0) == ':')
         message = message.substr(1);
 
-    // if notice is for a channel
-
+    // Si le message est destiné à un canal
     if (target.at(0) == '#')
     {
-        Channel* channel = clients[fd].getChannel();
+        channel* chan = nullptr;
+        std::vector<channel*> userChannels = clients[fd].get_channel();
 
-        // channel not found
-        if (!channel)
+        // Recherche du canal par son nom
+        for (std::vector<channel*>::iterator it = userChannels.begin(); it != userChannels.end(); ++it)
         {
-            sendErrorMessage(fd, ERR_NOSUCHCHANNEL(clients[fd].getNickname(), target));
+            channel* ch = *it;
+            if (ch->get_name() == target)
+            {
+                chan = ch;
+                break;
+            }
+        }
+
+        // Canal non trouvé
+        if (!chan)
+        {
+            sendErrorMessage(fd, ERR_NOSUCHCHANNEL(clients[fd].get_nickname(), target));
             return;
         }
 
-        // channel is not for external messages
-        if (!channel->isExternalMessage())
+        // Si le canal n'autorise pas les messages externes
+        if (!chan->isExternalMessage())
         {
-            std::vector<std::string> nicknames = channel->getNicknames();
-
-            // check if client is in the channel
-            bool isInChannel = false;
-            for (std::vector<std::string>::iterator it = nicknames.begin(); it != nicknames.end(); ++it)
+            // Vérifier si le client est dans le canal
+            if (!chan->is_member(&clients[fd]))
             {
-                if (nickname == clients[fd].getNickname())
-                {
-                    isInChannel = true;
-                    break;
-                }
-            }
-
-            if (!isInChannel)
-            {
-                sendErrorMessage(fd, ERR_CANNOTSENDTOCHAN(clients[fd].getNickname(), target));
+                sendErrorMessage(fd, ERR_CANNOTSENDTOCHAN(clients[fd].get_nickname(), target));
                 return;
             }
         }
 
-        // broadcast the message to the channel
-        channel->broadcast(RPL_PRIVMSG(clients[fd].getPrefix(), target, message), &clients[fd]);
+        // Diffuser le message au canal
+        chan->broadcast(RPL_PRIVMSG(clients[fd].get_prefix(), target, message), &clients[fd]);
         return;
     }
 
-    // else if notice is for a client
-
-    Client* destClient = nullptr;
-    for (std::map<int, Client>::iterator it = clients.begin(); it != clients.end(); ++it)
+    // Si le message est destiné à un autre client
+    client* destClient = nullptr;
+    for (std::map<int, client>::iterator it = clients.begin(); it != clients.end(); ++it)
     {
-        if (it->second.getNickname() == target)
+        if (it->second.get_nickname() == target)
         {
             destClient = &(it->second);
             break;
@@ -736,13 +766,15 @@ void command::ft_privmsg(std::vector<std::string> args, std::map<int, client>& c
 
     if (destClient == nullptr)
     {
-        sendErrorMessage(fd, ERR_NOSUCHNICK(clients[fd].getNickname(), target));
+        sendErrorMessage(fd, ERR_NOSUCHNICK(clients[fd].get_nickname(), target));
         return;
     }
 
-    // send the message to the destination client
-    destClient->write(RPL_PRIVMSG(clients[fd].getPrefix(), target, message));
+    // Envoyer le message au client destinataire
+    destClient->write(RPL_PRIVMSG(clients[fd].get_prefix(), target, message));
 }
+
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -750,12 +782,11 @@ void command::ft_notice(std::vector<std::string> args, std::map<int, client>& cl
 {
     if (args.size() < 2 || args[0].empty() || args[1].empty())
     {
-        sendErrorMessage(fd, ERR_NEEDMOREPARAMS(clients[fd].getNickname(), "NOTICE"));
+        sendErrorMessage(fd, ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "PRIVMSG"));
         return;
     }
 
-    // extract the target and the message
-
+    // Extraire la cible et le message
     std::string target = args.at(0);
     std::string message;
 
@@ -767,104 +798,175 @@ void command::ft_notice(std::vector<std::string> args, std::map<int, client>& cl
     if (message.at(0) == ':')
         message = message.substr(1);
 
-    // if notice is for a channel
-
+    // Si le message est destiné à un canal
     if (target.at(0) == '#')
     {
-        channel* channel = clients[fd].getChannel();
+        channel* chan = nullptr;
+        std::vector<channel*> userChannels = clients[fd].get_channel();
 
-        // channel not found
-        if (!channel)
+        // Recherche du canal par son nom
+        for (std::vector<channel*>::iterator it = userChannels.begin(); it != userChannels.end(); ++it)
         {
-            sendErrorMessage(fd, ERR_NOSUCHCHANNEL(clients[fd].getNickname(), target));
+            channel* ch = *it;
+            if (ch->get_name() == target)
+            {
+                chan = ch;
+                break;
+            }
+        }
+
+        // Canal non trouvé
+        if (!chan)
+        {
+            sendErrorMessage(fd, ERR_NOSUCHCHANNEL(clients[fd].get_nickname(), target));
             return;
         }
 
-        // channel is not for external messages
-        if (!channel->isExternalMessage())
+        // Si le canal n'autorise pas les messages externes
+        if (!chan->isExternalMessage())
         {
-            std::vector<std::string> nicknames = channel->getNicknames();
-
-            // check if client is in the channel
-            bool isInChannel = false;
-            for (std::vector<std::string>::iterator it = nicknames.begin(); it != nicknames.end(); ++it)
+            // Vérifier si le client est dans le canal
+            if (!chan->is_member(&clients[fd]))
             {
-                if (*it == clients[fd].getNickname())
-                {
-                    isInChannel = true;
-                    break;
-                }
-            }
-
-            if (!isInChannel)
-            {
-                sendErrorMessage(fd, ERR_CANNOTSENDTOCHAN(clients[fd].getNickname(), target));
+                sendErrorMessage(fd, ERR_CANNOTSENDTOCHAN(clients[fd].get_nickname(), target));
                 return;
             }
         }
 
-        // broadcast the notice to the channel
-        channel->broadcast(RPL_NOTICE(clients[fd].getPrefix(), target, message), &clients[fd]);
+        // Diffuser le message au canal
+        chan->broadcast(RPL_NOTICE(clients[fd].get_prefix(), target, message), &clients[fd]);
         return;
     }
 
-    // else if notice is for a client
-
-    std::map<int, Client>::iterator destClient = clients.find(fd);
-    if (destClient == clients.end())
+    // Si le message est destiné à un autre client
+    client* destClient = nullptr;
+    for (std::map<int, client>::iterator it = clients.begin(); it != clients.end(); ++it)
     {
-        sendErrorMessage(fd, ERR_NOSUCHNICK(clients[fd].getNickname(), target));
+        if (it->second.get_nickname() == target)
+        {
+            destClient = &(it->second);
+            break;
+        }
+    }
+
+    if (destClient == nullptr)
+    {
+        sendErrorMessage(fd, ERR_NOSUCHNICK(clients[fd].get_nickname(), target));
         return;
     }
 
-    // send the notice to the destination client
-    destClient->second.write(RPL_NOTICE(clients[fd].getPrefix(), target, message));
+    // Envoyer le message au client destinataire
+    destClient->write(RPL_NOTICE(clients[fd].get_prefix(), target, message));
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void command::ft_ping(std::vector<std::string> args, std::map<int, Client>& clients, int fd)
+void command::ft_ping(std::vector<std::string> args, std::map<int, client>& clients, int fd)
 {
     if (args.empty())
     {
-        sendErrorMessage(fd, ERR_NEEDMOREPARAMS(clients[fd].getNickname(), "PING"));
+        sendErrorMessage(fd, ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "PING"));
         return;
     }
 
-    clients[fd].write(RPL_PING(clients[fd].getPrefix(), args.at(0)));
+    clients[fd].write(RPL_PING(clients[fd].get_prefix(), args.at(0)));
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ft_part(std::vector<std::string> args, std::map<int, client>& clients, int fd)
+// void command::ft_part(std::vector<std::string> args, std::map<int, client>& clients, int fd)
+// {
+//     if (args.empty()) 
+//     {
+//         sendErrorMessage(fd, ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "PART"));
+//         return;
+//     }
+
+//     std::string name = args[0];
+//     channel* chan = nullptr;
+//     std::vector<channel*> userChannels = clients[fd].get_channel();
+
+//     // Recherche du canal par son nom
+//     for (channel* ch : userChannels)
+//     {
+//         if (ch->get_name() == name)
+//         {
+//             chan = ch;
+//             break;
+//         }
+//     }
+
+//     if (!chan)
+//     {
+//         sendErrorMessage(fd, ERR_NOSUCHCHANNEL(clients[fd].get_nickname(), name));
+//         return;
+//     }
+
+//     clients[fd].quiter();
+// }
+
+void command::ft_part(std::vector<std::string> args, std::map<int, client>& clients, int fd)
 {
     if (args.empty()) 
     {
-        clients[fd].reply(ERR_NEEDMOREPARAMS(clients[fd].getNickname(), "PART"));
+        sendErrorMessage(fd, ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "PART"));
         return;
     }
 
-    std::string name = args[0];
-    channel* channel = clients[fd].getChannel();
+    const std::vector<channel*>& userChannels = clients[fd].get_channel();
 
-    if (!channel || channel->getName() != name)
+    for (size_t i = 0; i < args.size(); ++i) 
     {
-        clients[fd].reply(ERR_NOSUCHCHANNEL(clients[fd].getNickname(), name));
-        return;
-    }
+        const std::string& channelName = args[i];
+        bool foundChannel = false;
 
-    clients[fd].quiter();
+        // Recherche du canal dans les canaux du client
+        for (size_t j = 0; j < userChannels.size(); ++j)
+        {
+            channel* chan = userChannels[j];
+            if (chan->get_name() == channelName)
+            {
+                // Supprimer le client du canal
+                chan->remove_client(&clients[fd]);
+                // Marquer le canal comme trouvé
+                foundChannel = true;
+                break;
+            }
+        }
+
+        // Si le canal n'est pas trouvé, envoyer un message d'erreur
+        if (!foundChannel)
+        {
+            sendErrorMessage(fd, ERR_NOTONCHANNEL(clients[fd].get_nickname(), channelName));
+        }
+    }
 }
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void command::kill(client* operatorClient, std::map<int, client>& clients, int fd, const std::string& reason) {
-    std::map<int, client>::iterator targetClient = clients.find(fd);
-    if (targetClient == clients.end()) {
-        operatorClient->write("ERR_NOSUCHSERVER " + operatorClient->getNickname());
+void command::ft_kill(client* operatorClient, std::map<int, client>& clients, int fd, const std::string& reason) {
+    // Recherche du client cible
+    std::map<int, client>::iterator it = clients.find(fd);
+    client* targetClient = nullptr;
+    if (it != clients.end()) {
+        targetClient = &(it->second);
+    }
+
+    // Vérification de l'existence du client cible
+    if (!targetClient) {
+        operatorClient->write("ERR_NOSUCHSERVER " + operatorClient->get_nickname());
         return;
     }
-    std::string killer = operatorClient->getNickname();
+
+    // Obtention du surnom de l'opérateur
+    std::string killer = operatorClient->get_nickname();
+
+    // Message de kill
     std::string killMessage = "Killed by operator (" + killer + "): " + reason;
-    targetClient->second.quit_network(clients, fd, reason);
+
+    // Quitter le réseau pour le client cible
+    targetClient->quit_network(clients, fd, reason);
 }
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void send_message_to_server(const std::string& message, int fd) {
@@ -904,11 +1006,11 @@ void command::cap(const std::string& subcommand, const std::string& capabilities
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void command::invite(int fd, const std::vector<std::string>& args, std::map<int, Client>& clients, std::vector<Channel*>& channels) {
-    Client& sender = clients[fd];
+void command::invite(int fd, const std::vector<std::string>& args, std::map<int, client>& clients, std::vector<channel*>& channels) {
+    client& sender = clients[fd];
 
     if (args.size() < 2) {
-        sender.write("ERR_NEEDMOREPARAMS " + sender.getNickname() + " INVITE");
+        sender.write(ERR_NEEDMOREPARAMS(sender.get_nickname(), "INVITE"));
         return;
     }
 
@@ -916,23 +1018,31 @@ void command::invite(int fd, const std::vector<std::string>& args, std::map<int,
     std::string channelName = args[1];
 
     // Trouver le client invité par son pseudo
-    Client* invitedClient = nullptr;
-    for (std::map<int, Client>::iterator it = clients.begin(); it != clients.end(); ++it) {
-        if (it->second.getNickname() == invitedNickname) {
+    client* invitedClient = nullptr;
+    for (std::map<int, client>::iterator it = clients.begin(); it != clients.end(); ++it) {
+        if (it->second.get_nickname() == invitedNickname) {
             invitedClient = &(it->second);
             break;
         }
     }
 
     if (!invitedClient) {
-        sender.write("ERR_NOSUCHNICK " + sender.getNickname() + " " + invitedNickname);
+        sender.write(ERR_NOSUCHNICK(sender.get_nickname(), invitedNickname));
         return;
     }
 
     // Trouver le canal par son nom
-    Channel* chan = Channel::get_channel_by_name(channelName, channels);
+    channel* chan = nullptr;
+    for (std::vector<channel*>::iterator it = channels.begin(); it != channels.end(); ++it) {
+        channel* ch = *it;
+        if (ch->get_name() == channelName) {
+            chan = ch;
+            break;
+        }
+    }
+
     if (!chan) {
-        sender.write("ERR_NOSUCHCHANNEL " + sender.getNickname() + " " + channelName);
+        sender.write(ERR_NOSUCHCHANNEL(sender.get_nickname(), channelName));
         return;
     }
 
@@ -940,34 +1050,41 @@ void command::invite(int fd, const std::vector<std::string>& args, std::map<int,
     sender.invite_to_channel(invitedClient, chan);
 }
 
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void Mode::execute(std::vector<std::string> args, std::map<int, Client>& clients, int fd)
+void command::mode(std::vector<std::string> args, std::map<int, client>& clients, std::vector<channel*>& channels, int fd)
 {
     // Handling errors
-
     if (args.size() < 2)
     {
-        sendErrorMessage(fd, ERR_NEEDMOREPARAMS(clients[fd].getNickname(), "MODE"));
+        clients[fd].sendMessage(ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "MODE"));
         return;
     }
     
     std::string target = args.at(0);
-    
-    Channel* channel = clients[fd].getServer()->getChannel(target); // MODE on clients not implemented
-    if (!channel)
+    channel* chan = nullptr;
+
+    // Recherche du canal par nom
+    for (size_t i = 0; i < channels.size(); ++i) {
+        if (channels[i]->get_name() == target) {
+            chan = channels[i];
+            break;
+        }
+    }
+
+    if (!chan)
     {
-        sendErrorMessage(fd, ERR_NOSUCHCHANNEL(clients[fd].getNickname(), target));
+        clients[fd].sendMessage(ERR_NOSUCHCHANNEL(clients[fd].get_nickname(), target));
         return;
     }
 
-    if (channel->getAdmin() != &clients[fd])
+    if (std::find(chan->getadmin().begin(), chan->getadmin().end(), fd) == chan->getadmin().end())
     {
-        sendErrorMessage(fd, ERR_CHANOPRIVSNEEDED(clients[fd].getNickname(), target));
+        clients[fd].sendMessage(ERR_CHANOPRIVSNEEDED(clients[fd].get_nickname(), target));
         return;
     }
 
     // Changing the mode
-
     int i = 0, p = 2;
     char c;
     
@@ -979,17 +1096,17 @@ void Mode::execute(std::vector<std::string> args, std::map<int, Client>& clients
         switch (c) 
         {
             case 'n':
-                channel->setExtMsg(active);
-                channel->broadcast(RPL_MODE(clients[fd].getPrefix(), channel->getName(), (active ? "+n" : "-n"), ""));
+                chan->setExternalMessage(active);
+                chan->broadcast(RPL_MODE(clients[fd].get_prefix(), chan->get_name(), (active ? "+n" : "-n"), ""), nullptr);
                 break;
             case 'l':
-                channel->setLimit(active ? std::atoi(args[p].c_str()) : 0);
-                channel->broadcast(RPL_MODE(clients[fd].getPrefix(), channel->getName(), (active ? "+l" : "-l"), (active ? args[p] : "")));
+                chan->set_limit(active ? std::stoi(args[p]) : 0);
+                chan->broadcast(RPL_MODE(clients[fd].get_prefix(), chan->get_name(), (active ? "+l" : "-l"), (active ? args[p] : "")), nullptr);
                 if (active) ++p;
                 break;
             case 'k':
-                channel->setKey(active ? args[p] : "");
-                channel->broadcast(RPL_MODE(clients[fd].getPrefix(), channel->getName(), (active ? "+k" : "-k"), (active ? args[p] : "")));
+                chan->set_key(active ? args[p] : "");
+                chan->broadcast(RPL_MODE(clients[fd].get_prefix(), chan->get_name(), (active ? "+k" : "-k"), (active ? args[p] : "")), nullptr);
                 if (active) ++p;
                 break;
             default:
