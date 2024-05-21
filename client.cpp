@@ -35,25 +35,26 @@ void client::sendMessage(const std::string& message) {
         std::cout << "Sending message to client: " << message << std::endl;
 }
 
-void client::quiter() {
-    if (!channels.empty()) {
-        for (std::vector<channel*>::iterator it = channels.begin(); it != channels.end(); ++it) {
-            channel* currentChannel = *it;
-            currentChannel->remove_client(this);
-        }
-        channels.clear();
-    }
-}
+// void client::quiter() {
+//     if (!channels.empty()) {
+//         for (std::vector<channel*>::iterator it = channels.begin(); it != channels.end(); ++it) {
+//             channel* currentChannel = *it;
+//             currentChannel->remove_client(this);
+//         }
+//         channels.clear();
+//     }
+// }
 
 void client::quit_network(std::map<int, client>& clients, int fd, const std::string& reason) const {
     for (std::map<int, client>::iterator it = clients.begin(); it != clients.end(); ++it) {
         int client_fd = it->first;
         client& cl = it->second;
         if (client_fd != fd) {
-            for (std::vector<channel*>::iterator it_channel = cl.get_channel().begin(); it_channel != cl.get_channel().end(); ++it_channel) {
+            const std::vector<channel*>& channels = cl.get_channel();
+            for (std::vector<channel*>::const_iterator it_channel = channels.begin(); it_channel != channels.end(); ++it_channel) {
                 channel* currentChannel = *it_channel;
                 currentChannel->remove_client(this);
-            } 
+            }
         }
     }
     std::cout << "ERROR: Closing Link: <servername> (Killed by operator (" << reason << "))" << std::endl;
@@ -105,10 +106,18 @@ int client::get_fd() const
 
 std::string client::get_prefix() const 
 {
-    std::string _username = username.empty() ? "" : "!" + username;
-    std::string _hostname = hostname.empty() ? "" : "@" + hostname;
+     std::string user;
+     std::string host;
 
-    return nickname + _username + _hostname;
+    if (!username.empty()) {
+        user = "!" + username;
+    }
+
+    if (!hostname.empty()) {
+        host = "@" + hostname;
+    }
+
+    return nickname + user + host;
 }
 
 

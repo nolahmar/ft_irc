@@ -5,7 +5,7 @@
 
 int main(int argc,char **argv)
 {
-    argv = argv;
+    //argv = argv;
     if(argc != 3)
     {
         std::cerr << "usage : ./ircserv [port] [password]" << std::endl;

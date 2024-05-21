@@ -25,7 +25,7 @@ class command
 	void excute(const std::string& command,const std::vector<std::string>& parameters,std::map< int ,client> &clients,int fd,std::string password,std::vector<channel *> &channels);
 	command();
 	void ft_kick(std::vector<std::string> parametres , std::map<int ,client> &clients ,int fd ,std::vector<channel *> &channels);
-	void	ft_user(std::vector<std::string> parametres ,std::map< int ,client> &clients,int fd);
+	void ft_user(std::vector<std::string> parametres ,std::map< int ,client> &clients,int fd);
 	void ft_pass(std::vector<std::string> parametres ,std::map< int ,client> &clients ,int fd ,std::string pass);
 	void ft_join(std::vector<std::string> parametres , std::map<int ,client> &clients ,int fd,std::vector<channel *> &channels);
 	void ft_nick(std::vector<std::string> parametres ,std::map< int ,client> &clients ,int fd);

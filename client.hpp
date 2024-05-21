@@ -23,6 +23,7 @@
 #define RPL_MODE(source, channel, modes, args)          ":" + source + " MODE " + channel + " " + modes + " " + args
 #define ERR_CHANOPRIVSNEEDED(source, channel)           "482 " + source + " " + channel + " :You're not channel operator"
 #define ERR_NOTONCHANNEL(source, channel)               "442 " + source + " " + channel + " :You're not on that channel"
+#define RPL_PART(source, channel)                       ":" + source + " PART :" + channel
 
 
 class channel;
@@ -54,7 +55,7 @@ class client
         std::string is_registered();
         std::string get_password() const;
         void sendMessage(const std::string& message);
-        void quiter();
+        // void quiter();
         void invite_to_channel(client* invitedClient, channel* channel);
         std::string get_prefix() const;
         void write(const std::string& message) const;

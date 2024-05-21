@@ -693,6 +693,7 @@ void sendErrorMessage(int fd, const std::string& errorMessage) {
     std::cout << "Sending error message to client with fd " << fd << ": " << errorMessage << std::endl;
 }
 
+//santaxe ---> PRIVMSG noni :hello
 void command::ft_privmsg(std::vector<std::string> args, std::map<int, client>& clients, int fd)
 {
     if (args.size() < 2 || args[0].empty() || args[1].empty())
@@ -707,10 +708,10 @@ void command::ft_privmsg(std::vector<std::string> args, std::map<int, client>& c
 
     for (std::vector<std::string>::iterator it = args.begin() + 1; it != args.end(); ++it)
     {
-        message.append(*it + " ");
+        message.append(" " + *it);
     }
 
-    if (message.at(0) == ':')
+    if (!message.empty() && message.at(0) == ':')
         message = message.substr(1);
 
     // Si le message est destiné à un canal
@@ -792,10 +793,10 @@ void command::ft_notice(std::vector<std::string> args, std::map<int, client>& cl
 
     for (std::vector<std::string>::iterator it = args.begin() + 1; it != args.end(); ++it)
     {
-        message.append(*it + " ");
+        message.append(" " + *it);
     }
 
-    if (message.at(0) == ':')
+    if (!message.empty() && message.at(0) == ':')
         message = message.substr(1);
 
     // Si le message est destiné à un canal
@@ -872,37 +873,6 @@ void command::ft_ping(std::vector<std::string> args, std::map<int, client>& clie
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// void command::ft_part(std::vector<std::string> args, std::map<int, client>& clients, int fd)
-// {
-//     if (args.empty()) 
-//     {
-//         sendErrorMessage(fd, ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "PART"));
-//         return;
-//     }
-
-//     std::string name = args[0];
-//     channel* chan = nullptr;
-//     std::vector<channel*> userChannels = clients[fd].get_channel();
-
-//     // Recherche du canal par son nom
-//     for (channel* ch : userChannels)
-//     {
-//         if (ch->get_name() == name)
-//         {
-//             chan = ch;
-//             break;
-//         }
-//     }
-
-//     if (!chan)
-//     {
-//         sendErrorMessage(fd, ERR_NOSUCHCHANNEL(clients[fd].get_nickname(), name));
-//         return;
-//     }
-
-//     clients[fd].quiter();
-// }
-
 void command::ft_part(std::vector<std::string> args, std::map<int, client>& clients, int fd)
 {
     if (args.empty()) 
@@ -911,6 +881,7 @@ void command::ft_part(std::vector<std::string> args, std::map<int, client>& clie
         return;
     }
 
+    // Liste des canaux auxquels le client est connecté
     const std::vector<channel*>& userChannels = clients[fd].get_channel();
 
     for (size_t i = 0; i < args.size(); ++i) 
@@ -918,28 +889,25 @@ void command::ft_part(std::vector<std::string> args, std::map<int, client>& clie
         const std::string& channelName = args[i];
         bool foundChannel = false;
 
-        // Recherche du canal dans les canaux du client
+        // Recherche du canal dans la liste des canaux du client
         for (size_t j = 0; j < userChannels.size(); ++j)
         {
             channel* chan = userChannels[j];
             if (chan->get_name() == channelName)
             {
-                // Supprimer le client du canal
+                // Envoyer un message de départ à tous les membres du canal
+                chan->broadcast(RPL_PART(clients[fd].get_prefix(), channelName), &clients[fd]);
                 chan->remove_client(&clients[fd]);
-                // Marquer le canal comme trouvé
                 foundChannel = true;
                 break;
             }
         }
-
-        // Si le canal n'est pas trouvé, envoyer un message d'erreur
         if (!foundChannel)
         {
             sendErrorMessage(fd, ERR_NOTONCHANNEL(clients[fd].get_nickname(), channelName));
         }
     }
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -965,28 +933,33 @@ void command::ft_kill(client* operatorClient, std::map<int, client>& clients, in
 
     // Quitter le réseau pour le client cible
     targetClient->quit_network(clients, fd, reason);
+
+    // Envoi du message de kill
+    targetClient->write("Closing Link: " + targetClient->get_nickname() + killMessage);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void send_message_to_server(const std::string& message, int fd) {
-    // Convertir la chaîne de caractères en un pointeur de caractères C pour l'appel système write
     const char* buffer = message.c_str();
-    
-    // Obtenir la longueur du message à envoyer
-    size_t length = std::strlen(buffer);
-    
-    // Utiliser l'appel système write pour envoyer le message
-    ssize_t bytes_written = write(fd, buffer, length);
-    
-    // Vérifier si l'écriture a réussi
-    if (bytes_written == -1) {
-        // Gérer l'erreur d'écriture
-        std::cerr << "Erreur lors de l'envoi du message au serveur" << std::endl;
-    } else {
-        std::cout << "Message envoyé au serveur avec succès" << std::endl;
+    size_t length = message.size();  // Utiliser size() au lieu de strlen
+
+    size_t total_bytes_written = 0;
+
+    while (total_bytes_written < length) {
+        ssize_t bytes_written = write(fd, buffer + total_bytes_written, length - total_bytes_written);
+        
+        if (bytes_written == -1) {
+            std::cerr << "Erreur lors de l'envoi du message au serveur" << std::endl;
+            return;
+        }
+        
+        total_bytes_written += bytes_written;
     }
+    
+    std::cout << "Message envoyé au serveur avec succès" << std::endl;
 }
+
 
 void command::cap(const std::string& subcommand, const std::string& capabilities, int fd) {
     std::string message = "CAP " + subcommand;
@@ -1049,7 +1022,6 @@ void command::invite(int fd, const std::vector<std::string>& args, std::map<int,
     // Inviter le client au canal
     sender.invite_to_channel(invitedClient, chan);
 }
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void command::mode(std::vector<std::string> args, std::map<int, client>& clients, std::vector<channel*>& channels, int fd)

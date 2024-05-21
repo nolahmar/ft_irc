@@ -32,9 +32,10 @@ channel &channel::operator=(const channel &orginal)
 
 	return *this;
 }
+
 void channel::broadcast(const std::string& message, client* exclu)
 {
-    for (auto it = clients.begin(); it != clients.end(); ++it)
+    for (std::vector<client*>::iterator it = clients.begin(); it != clients.end(); ++it)
     {
         if (*it == exclu)
         {
@@ -44,6 +45,7 @@ void channel::broadcast(const std::string& message, client* exclu)
         (*it)->sendMessage(message);
     }
 }
+
 
 void channel::remove_client(const client* clientToRemove)
 {
