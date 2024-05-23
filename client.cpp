@@ -68,25 +68,27 @@ void client::join_channel(channel* channel) {
 
 void client::invite_to_channel(int fd, client* invitedClient, channel* channel) {
     if (!channel) {
-        write(fd, "ERR_NOSUCHCHANNEL " + nickname + " " + channel->get_name());
+        write(fd, ERR_NOSUCHCHANNEL(get_nickname(), "ERR_NOSUCHCHANNEL"));
         return;
     }
     if (!channel->is_member(this)) {
-        write(fd, "ERR_NOTONCHANNEL " + nickname + " " + channel->get_name());
+        write(fd, ERR_NOTONCHANNEL(get_nickname(), channel->get_name()));
         return;
     }
 
     if (channel->is_member(invitedClient)) {
-        write(fd, "ERR_USERONCHANNEL " + nickname + " " + channel->get_name());
+        write(fd, ERR_USERONCHANNEL(get_nickname(), channel->get_name()));
         return;
     }
+
     // Envoyer un message d'invitation à l'utilisateur invité
-    invitedClient->write(fd, "INVITE " + nickname + " " + channel->get_name());
+    invitedClient->write(fd, "INVITE " + get_nickname() + " " + channel->get_name());
     invitedClient->join_channel(channel);
 
     // Envoyer un message de confirmation à l'utilisateur qui a envoyé l'invitation
-    write(fd, "RPL_INVITING " + channel->get_name());
+    write(fd, RPL_INVITING(get_nickname(), channel->get_name()));
 }
+
 
 void client::remove_channel(const channel* channelToRemove)
 {

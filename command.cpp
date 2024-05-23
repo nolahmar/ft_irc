@@ -70,7 +70,8 @@ void command::excute(const std::string& command,const std::vector<std::string>& 
 			{
 				ft_response(fd,"ERR_NEEDMOREPARAMS"); 
             }
-        } else if (command == "KICK")
+        } 
+		else if (command == "KICK")
 		 {
             // KICK command: Kick a user from a channel
             if (parameters.size() >= 2) 
@@ -814,24 +815,19 @@ void command::ft_privmsg(std::vector<std::string> args, std::map<int, client>& c
 
 void command::ft_notice(std::vector<std::string> args, std::map<int, client>& clients, int fd)
 {
-  if (args.size() < 2 || args[0].empty() || args[1].empty())
+  if (args.size() < 2 || args[0].empty() || args[1].empty() || args[1].at(0) != ':')
     {
         ft_response(fd, "ERR_NEEDMOREPARAMS");
         return;
     }
 
+	args[1].erase(args[1].begin());
     // Extraire la cible et le message
     std::string target = args.at(0);
     std::string message;
 
     for (std::vector<std::string>::iterator it = args.begin() + 1; it != args.end(); ++it)
-    {
-        message.append(" " + *it);
-    }
-
-    if (!message.empty() && message.at(0) == ':')
-        message = message.substr(1);
-
+		(it != (args.end() - 1)) ? message.append(*it + " ") : message.append(*it);
     // Si le message est destiné à un canal
     if (target.at(0) == '#')
     {
@@ -895,27 +891,24 @@ void command::ft_notice(std::vector<std::string> args, std::map<int, client>& cl
 
 // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void command::ft_ping(std::vector<std::string> args, std::map<int, client>& clients, int fd)
-{
-    if (args.empty())
-    {
+void command::ft_ping(std::vector<std::string> args, std::map<int, client>& clients, int fd) {
+    if (args.empty()) {
         ft_response(fd, "ERR_NEEDMOREPARAMS");
         return;
     }
 
-    clients[fd].write(ft_ckeak(args[0], clients), RPL_PING(clients[fd].get_prefix(), args.at(0)));
+    // Répondre avec un PONG
+    std::string token = args[0];
+    std::string response = "PONG :" + token;
+    clients[fd].write(fd, response);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void command::ft_pong(std::vector<std::string> args, std::map<int, client>& clients, int fd)
-{
-    if (args.empty())
-    {
+void command::ft_pong(std::vector<std::string> args, std::map<int, client>& clients, int fd) {
+    if (args.empty()) {
         ft_response(fd, "ERR_NEEDMOREPARAMS");
         return;
     }
-
-    clients[fd].write(ft_ckeak(args[0], clients), RPL_PONG(clients[fd].get_prefix(), args.at(0)));
+    std::cout << "Received PONG from client: " << clients[fd].get_nickname() << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -951,7 +944,7 @@ void command::ft_part(std::vector<std::string> args, std::map<int, client>& clie
         }
         if (!foundChannel)
         {
-            ft_response(fd, "ERR_NOTONCHANNEL");
+            ft_response(ft_ckeak(args[0], clients), "ERR_NOTONCHANNEL");
         }
     }
 }
@@ -1038,43 +1031,43 @@ void command::invite(int fd, const std::vector<std::string>& args, std::map<int,
     std::string channelName = args[1];
 
     // Trouver le client invité par son pseudo
-    client* invitedClient = NULL;
+    std::map<int, client>::iterator invitedClientIt = clients.end();
     for (std::map<int, client>::iterator it = clients.begin(); it != clients.end(); ++it) {
         if (it->second.get_nickname() == invitedNickname) {
-            invitedClient = &(it->second);
+            invitedClientIt = it;
             break;
         }
     }
 
-    if (!invitedClient) {
+    if (invitedClientIt == clients.end()) {
         ft_response(fd, "ERR_NOSUCHNICK");
         return;
     }
 
     // Trouver le canal par son nom
-    channel* chan = NULL;
+    std::vector<channel*>::iterator chanIt = channels.end();
     for (std::vector<channel*>::iterator it = channels.begin(); it != channels.end(); ++it) {
-        channel* ch = *it;
-        if (ch->get_name() == channelName) {
-            chan = ch;
+        if ((*it)->get_name() == channelName) {
+            chanIt = it;
             break;
         }
     }
 
-    if (!chan) {
+    if (chanIt == channels.end()) {
         ft_response(fd, "ERR_NOSUCHCHANNEL");
         return;
     }
 
     // Inviter le client au canal
-    sender.invite_to_channel(fd, invitedClient, chan);
+    sender.invite_to_channel(fd, &(invitedClientIt->second), *chanIt);
 }
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void command::mode(std::vector<std::string> args, std::map<int, client>& clients, std::vector<channel*>& channels, int fd) {
     // Handling errors
     if (args.size() < 2) {
-        clients[fd].sendMessage(ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "MODE"));
+        ft_response(fd, "ERR_NEEDMOREPARAMS");
         return;
     }
 
@@ -1090,33 +1083,32 @@ void command::mode(std::vector<std::string> args, std::map<int, client>& clients
     }
 
     if (!chan) {
-        clients[fd].sendMessage(ERR_NOSUCHCHANNEL(clients[fd].get_nickname(), target));
+        ft_response(fd, "ERR_NOSUCHCHANNEL");
         return;
     }
 
     if (std::find(chan->getadmin().begin(), chan->getadmin().end(), fd) == chan->getadmin().end()) {
-        clients[fd].sendMessage(ERR_CHANOPRIVSNEEDED(clients[fd].get_nickname(), target));
+        ft_response(fd, "ERR_CHANOPRIVSNEEDED");
         return;
     }
 
     // Changing the mode
-    int i = 0;
-    std::vector<std::string>::size_type p = 2; // Corriger le type pour éviter les erreurs de comparaison
-    char c;
+    std::string modeStr = args[1];
     bool active = true; // Indicates whether to add or remove the mode
+    std::string param;
     
-    while ((c = args[1][i])) {
-        if (c == '+') {
-            active = true;
-        } else if (c == '-') {
-            active = false;
+    for (size_t i = 0; i < modeStr.size(); ++i) {
+        char c = modeStr[i];
+        if (c == '+' || c == '-') {
+            active = (c == '+');
         } else {
             // Modes requiring arguments
             if (c == 'l' || c == 'k') {
-                if (active && p >= args.size()) {
-                    clients[fd].sendMessage(ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "MODE"));
+                if (i + 1 >= args.size()) {
+                    ft_response(fd, "ERR_NEEDMOREPARAMS");
                     return;
                 }
+                param = args[++i];
             }
 
             switch (c) {
@@ -1124,32 +1116,24 @@ void command::mode(std::vector<std::string> args, std::map<int, client>& clients
                     chan->setExternalMessage(active);
                     chan->broadcast(RPL_MODE(clients[fd].get_prefix(), chan->get_name(), (active ? "+n" : "-n"), ""), NULL);
                     break;
-                case 'l': {
-                    int limit = 0;
-                    if (active) {
-                        std::istringstream iss(args[p]); // Utiliser std::istringstream pour convertir en int
-                        iss >> limit;
-                    }
+                case 'l':
+                    int limit;
+                    std::istringstream(param) >> limit;
                     chan->set_limit(limit);
-                    chan->broadcast(RPL_MODE(clients[fd].get_prefix(), chan->get_name(), (active ? "+l" : "-l"), (active ? args[p] : "")), NULL);
-                    if (active) 
-                        ++p;
+                    chan->broadcast(RPL_MODE(clients[fd].get_prefix(), chan->get_name(), (active ? "+l" : "-l"), (active ? param : "")), NULL);
                     break;
-                }
                 case 'k':
-                    chan->set_key(active ? args[p] : "");
-                    chan->broadcast(RPL_MODE(clients[fd].get_prefix(), chan->get_name(), (active ? "+k" : "-k"), (active ? args[p] : "")), NULL);
-                    if (active) 
-                        ++p;
+                    chan->set_key(active ? param : "");
+                    chan->broadcast(RPL_MODE(clients[fd].get_prefix(), chan->get_name(), (active ? "+k" : "-k"), (active ? param : "")), NULL);
                     break;
                 default:
-                    clients[fd].sendMessage(ERR_UNKNOWNMODE(clients[fd].get_nickname(), std::string(1, c)));
-                    break;
+                    ft_response(fd, "ERR_UNKNOWNMODE");
+                    return;
             }
         }
-        ++i;
     }
 }
+
 
 command::~command()
 {

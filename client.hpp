@@ -28,7 +28,8 @@
 #define RPL_PART(source, channel)                       ":" + source + " PART :" + channel
 #define ERR_UNKNOWNMODE(nickname, mode) "472 " + nickname + " " + mode + " :is unknown mode char to me"
 #define RPL_PONG(prefix, token) ":" + prefix + " PONG :" + token
-
+#define ERR_USERONCHANNEL(source, channel) "443 " + source + " " + channel + " :is already on channel"
+#define RPL_INVITING(user, channel) "341 " + user + " " + channel + " :Inviting"
 
 
 class channel;
