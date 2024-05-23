@@ -27,12 +27,13 @@ client &client::operator=(const client &orginal)
 	return *this;
 }
 
-void client::write(const std::string& message) const {
-    std::cout << "Message envoyé à " << nickname << " : " << message << std::endl;
+void client::write(int fd, const std::string& message) const {
+    send(fd, (message + "\r\n").c_str(), (message + "\r\n").length(), 0);
 }
 
 void client::sendMessage(const std::string& message) {
-        std::cout << "Sending message to client: " << message << std::endl;
+    // Envoyer le message au socket du client
+    send(fd, message.c_str(), message.length(), 0);
 }
 
 // void client::quiter() {
@@ -65,26 +66,26 @@ void client::join_channel(channel* channel) {
 	ChannelPtr = channel;
 }
 
-void client::invite_to_channel(client* invitedClient, channel* channel) {
+void client::invite_to_channel(int fd, client* invitedClient, channel* channel) {
     if (!channel) {
-        write("ERR_NOSUCHCHANNEL " + nickname + " " + channel->get_name());
+        write(fd, "ERR_NOSUCHCHANNEL " + nickname + " " + channel->get_name());
         return;
     }
     if (!channel->is_member(this)) {
-        write("ERR_NOTONCHANNEL " + nickname + " " + channel->get_name());
+        write(fd, "ERR_NOTONCHANNEL " + nickname + " " + channel->get_name());
         return;
     }
 
     if (channel->is_member(invitedClient)) {
-        write("ERR_USERONCHANNEL " + nickname + " " + channel->get_name());
+        write(fd, "ERR_USERONCHANNEL " + nickname + " " + channel->get_name());
         return;
     }
     // Envoyer un message d'invitation à l'utilisateur invité
-    invitedClient->write("INVITE " + nickname + " " + channel->get_name());
+    invitedClient->write(fd, "INVITE " + nickname + " " + channel->get_name());
     invitedClient->join_channel(channel);
 
     // Envoyer un message de confirmation à l'utilisateur qui a envoyé l'invitation
-    write("RPL_INVITING " + channel->get_name());
+    write(fd, "RPL_INVITING " + channel->get_name());
 }
 
 void client::remove_channel(const channel* channelToRemove)
@@ -184,6 +185,11 @@ void client::set_hostname(const std::string hostn)
 void client::set_channel(const std::vector<channel *> chan)
 {
 	this->channels = chan;
+}
+
+void           client:: set_servername(const std::string    server_n)
+{
+	this->servername = server_n;
 }
 
 client::~client()

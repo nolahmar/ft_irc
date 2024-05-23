@@ -69,14 +69,14 @@ client* channel::getClientById(int userId) const {
             return *it;
         }
     }
-    return nullptr;
+    return NULL;
 }
 
 bool channel::is_member(client* user) const {
     std::string userNickname = user->get_nickname();
     for (size_t i = 0; i < Users.size(); ++i) {
         client* currentUser = getClientById(Users[i]);
-        if (currentUser != nullptr && currentUser->get_nickname() == userNickname) {
+        if (currentUser != NULL && currentUser->get_nickname() == userNickname) {  // Remplacer NULL par NULL
             return true;
         }
     }
@@ -89,7 +89,7 @@ channel* channel::get_channel_by_name(const std::string& channelName, const std:
             return channels[i];
         }
     }
-    return nullptr;
+    return NULL;
 }
 
 bool channel::isExternalMessage() const {

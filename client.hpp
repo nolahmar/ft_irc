@@ -4,13 +4,15 @@
 #include <iostream>
 #include <sstream>
 #include <cstddef>
-#include <cstdint>
+#include <stdint.h>
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <cstdlib> 
 #include <stdio.h>
 #include <vector>
+#include <unistd.h>
+#include <sys/socket.h>
 #include<map>
 
 #define ERR_NEEDMOREPARAMS(source, command)             "461 " + source + " " + command + " :Not enough parameters"
@@ -24,6 +26,9 @@
 #define ERR_CHANOPRIVSNEEDED(source, channel)           "482 " + source + " " + channel + " :You're not channel operator"
 #define ERR_NOTONCHANNEL(source, channel)               "442 " + source + " " + channel + " :You're not on that channel"
 #define RPL_PART(source, channel)                       ":" + source + " PART :" + channel
+#define ERR_UNKNOWNMODE(nickname, mode) "472 " + nickname + " " + mode + " :is unknown mode char to me"
+#define RPL_PONG(prefix, token) ":" + prefix + " PONG :" + token
+
 
 
 class channel;
@@ -39,6 +44,7 @@ class client
         std::string hostname;
         std::string password;
         channel* ChannelPtr;
+        std::string servername;
         // std::vector<channel*>  channels;
 
     public:
@@ -55,10 +61,10 @@ class client
         std::string is_registered();
         std::string get_password() const;
         void sendMessage(const std::string& message);
-        // void quiter();
-        void invite_to_channel(client* invitedClient, channel* channel);
+        void quiter();
+        void invite_to_channel(int fd, client* invitedClient, channel* channel);
         std::string get_prefix() const;
-        void write(const std::string& message) const;
+        void write(int fd, const std::string& message) const;
         void quit_network(std::map<int, client>& clients, int fd, const std::string& reason) const;
         void join_channel(channel* channel);
         void remove_channel(const channel* channelToRemove);
@@ -70,6 +76,7 @@ class client
         void            set_hostname(const std::string hostn);
         void            set_channel(const std::vector<channel*> chan);
         void            set_registered(std::string status);
+        void            set_servername(const std::string    server_n);
         client();
         client & operator=(const client &orginal);
         client(const client &orginal);

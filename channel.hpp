@@ -3,13 +3,14 @@
 
 #include "client.hpp"
 #include <cstddef>
-#include <cstdint>
+#include <stdint.h>
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <cstdlib> 
 #include <stdio.h>
 #include <vector>
+#include <cstring>
 
 class channel
 {
