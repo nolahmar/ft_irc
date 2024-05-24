@@ -45,7 +45,9 @@ class channel
         void addUser(int userId);
         void broadcast(const std::string& message, client* exclu);
         void remove_client(const client* clientToRemove);
-        bool is_member(client* user) const ;
+        bool is_member(int userId) const ;
+        bool is_admin(int userId) const;
+        void add_user(int userId);
         channel* get_channel_by_name(const std::string& channelName, const std::vector<channel*>& channels);
         bool isExternalMessage() const;
         void setExternalMessage(bool allow);

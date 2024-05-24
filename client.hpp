@@ -37,7 +37,8 @@ class client
 {
     private:
         std::string state;
-        int fd;                                                                                                                                                                                                                                                                                                                                 
+        int fd;
+        int id;                                                                                                                                                                                                                                                                                                                                
         std::string port;
         std::string nickname;
         std::string username;
@@ -58,6 +59,7 @@ class client
         std::string     get_username() const;
         std::string     get_realname() const;
         std::string     get_hostname() const;
+        int get_id() const;
         std::vector<channel*>       get_channel() const;
         std::string is_registered();
         std::string get_password() const;

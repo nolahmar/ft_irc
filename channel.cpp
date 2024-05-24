@@ -1,37 +1,41 @@
 #include "channel.hpp"
+#include <algorithm>
 
 channel::channel(std::string& name, int owner, std::string topic, std::string key)
-{
-		this->Name = name;
-		this->Owner = owner;
-		this->Key = key;
-		this->Topic = topic;
+		: Name(name), Owner(owner), Key(key), Topic(topic), _allowExternalMessages(false), _limit(-1) {
+        Admin.push_back(owner); // L'utilisateur qui crée le canal devient automatiquement administrateur
+        Users.push_back(owner);
 }
 
-channel::channel()
+channel::channel(): Owner(-1), _allowExternalMessages(false), _limit(-1) {}
+
+channel::channel(const  channel &original)
+: Name(original.Name), Owner(original.Owner), Users(original.Users), Key(original.Key),
+          Topic(original.Topic), clients(original.clients), _allowExternalMessages(original._allowExternalMessages),
+          _limit(original._limit), Admin(original.Admin) 
 {
 
 }
 
-channel::channel(const  channel &orginal)
-{
-	*this = orginal;
+ void channel::add_user(int userId) { 
+    Users.push_back(userId);
 }
 
-channel &channel::operator=(const channel &orginal)
+channel &channel::operator=(const channel &original)
 {
-	if(this != &orginal)
-	{
-		this->Name = orginal.Name;
-		this->Admin = orginal.Admin;
-		this->Owner = orginal.Owner;
-		this->Users = orginal.Users;
-		this->Key = orginal.Key;
-		this->Topic = orginal.Topic;
-	}
-
-	return *this;
-}
+	if (this != &original) {
+            Name = original.Name;
+            Owner = original.Owner;
+            Users = original.Users;
+            Key = original.Key;
+            Topic = original.Topic;
+            clients = original.clients;
+            _allowExternalMessages = original._allowExternalMessages;
+            _limit = original._limit;
+            Admin = original.Admin;
+        }
+        return *this;
+    }
 
 void channel::broadcast(const std::string& message, client* exclu)
 {
@@ -72,11 +76,19 @@ client* channel::getClientById(int userId) const {
     return NULL;
 }
 
-bool channel::is_member(client* user) const {
-    std::string userNickname = user->get_nickname();
-    for (size_t i = 0; i < Users.size(); ++i) {
-        client* currentUser = getClientById(Users[i]);
-        if (currentUser != NULL && currentUser->get_nickname() == userNickname) {  // Remplacer NULL par NULL
+bool channel::is_member(int userId) const {
+    // Vérifier si l'utilisateur est membre, administrateur ou propriétaire du canal
+    if (std::find(Users.begin(), Users.end(), userId) != Users.end() ||
+        std::find(Admin.begin(), Admin.end(), userId) != Admin.end() ||
+        Owner == userId) {
+        return true;
+    }
+    return false;
+}
+
+bool channel::is_admin(int userId) const {
+    for (std::vector<int>::const_iterator it = Admin.begin(); it != Admin.end(); ++it) {
+        if (*it == userId) {
             return true;
         }
     }

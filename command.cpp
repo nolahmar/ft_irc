@@ -777,7 +777,7 @@ void command::ft_privmsg(std::vector<std::string> args, std::map<int, client>& c
         if (!chan->isExternalMessage())
         {
             // Vérifier si le client est dans le canal
-            if (!chan->is_member(&clients[fd]))
+            if (!chan->is_member(clients[fd].get_id()))
             {
                 ft_response(fd, "ERR_CANNOTSENDTOCHAN");
                 return;
@@ -856,7 +856,7 @@ void command::ft_notice(std::vector<std::string> args, std::map<int, client>& cl
         if (!chan->isExternalMessage())
         {
             // Vérifier si le client est dans le canal
-            if (!chan->is_member(&clients[fd]))
+            if (!chan->is_member(clients[fd].get_id()))
             {
                 ft_response(fd, "ERR_CANNOTSENDTOCHAN");
                 return;

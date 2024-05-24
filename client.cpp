@@ -1,30 +1,39 @@
 #include "client.hpp"
 #include "channel.hpp"
 
-client::client()
+client::client(): fd(-1), id(-1), ChannelPtr(NULL)
 {
 	state = "none"; // pass - usernam mazl medkhl
 	
 }
 
-client::client(const client &orginal)
-{
-	
-	*this = orginal;
+client::client(const client& original) {
+    fd = original.fd;
+    id = original.id;
+    nickname = original.nickname;
+    username = original.username;
+    realname = original.realname;
+    hostname = original.hostname;
+    password = original.password;
+    ChannelPtr = original.ChannelPtr;
+    servername = original.servername;
+    channels = original.channels;
 }
 
-client &client::operator=(const client &orginal)
-{
-	
-	if (this != &orginal)
-	{
-		this->fd = orginal.fd;
-		this->nickname = orginal.nickname;
-		this->username = orginal.username;
-		this->realname = orginal.realname;
-	}
-
-	return *this;
+client& client::operator=(const client& original) {
+    if (this != &original) {
+        fd = original.fd;
+        id = original.id;
+        nickname = original.nickname;
+        username = original.username;
+        realname = original.realname;
+        hostname = original.hostname;
+        password = original.password;
+        ChannelPtr = original.ChannelPtr;
+        servername = original.servername;
+        channels = original.channels;
+    }
+    return *this;
 }
 
 void client::write(int fd, const std::string& message) const {
@@ -47,37 +56,27 @@ void client::sendMessage(const std::string& message) {
 // }
 
 void client::quit_network(std::map<int, client>& clients, int fd, const std::string& reason) const {
-    for (std::map<int, client>::iterator it = clients.begin(); it != clients.end(); ++it) {
-        int client_fd = it->first;
-        client& cl = it->second;
-        if (client_fd != fd) {
-            const std::vector<channel*>& channels = cl.get_channel();
-            for (std::vector<channel*>::const_iterator it_channel = channels.begin(); it_channel != channels.end(); ++it_channel) {
-                channel* currentChannel = *it_channel;
-                currentChannel->remove_client(this);
-            }
-        }
-    }
-    std::cout << "ERROR: Closing Link: <servername> (Killed by operator (" << reason << "))" << std::endl;
+    std::string quitMessage = "QUIT :" + reason + "\n";
+    write(fd, quitMessage);
+    close(fd);
+    clients.erase(fd);
 }
 
 
-void client::join_channel(channel* channel) {
-	ChannelPtr = channel;
+void client::join_channel(channel* chan) {
+    if (!chan->is_member(id)) {
+        chan->add_user(id);
+        channels.push_back(chan);
+    }
 }
 
 void client::invite_to_channel(int fd, client* invitedClient, channel* channel) {
     if (!channel) {
-        write(fd, ERR_NOSUCHCHANNEL(get_nickname(), "ERR_NOSUCHCHANNEL"));
+        write(fd, ERR_NOSUCHCHANNEL(get_nickname(), channel->get_name()));
         return;
     }
-    if (!channel->is_member(this)) {
+    if (!channel->is_member(invitedClient->get_fd()) && channel->getOwner() != fd) {
         write(fd, ERR_NOTONCHANNEL(get_nickname(), channel->get_name()));
-        return;
-    }
-
-    if (channel->is_member(invitedClient)) {
-        write(fd, ERR_USERONCHANNEL(get_nickname(), channel->get_name()));
         return;
     }
 
@@ -88,6 +87,7 @@ void client::invite_to_channel(int fd, client* invitedClient, channel* channel) 
     // Envoyer un message de confirmation à l'utilisateur qui a envoyé l'invitation
     write(fd, RPL_INVITING(get_nickname(), channel->get_name()));
 }
+
 
 
 void client::remove_channel(const channel* channelToRemove)
@@ -128,6 +128,10 @@ std::string client::get_prefix() const
 std::string client::is_registered()
 {
     return state;
+}
+
+int client::get_id() const {
+    return id;
 }
 
 std::string client::get_password() const 
