@@ -25,7 +25,7 @@
 #define RPL_MODE(source, channel, modes, args)          ":" + source + " MODE " + channel + " " + modes + " " + args
 #define ERR_CHANOPRIVSNEEDED(source, channel)           "482 " + source + " " + channel + " :You're not channel operator"
 #define ERR_NOTONCHANNEL(source, channel)               "442 " + source + " " + channel + " :You're not on that channel"
-#define RPL_PART(source, channel)                       ":" + source + " PART :" + channel
+#define RPL_PART(source, channel, reason)                       ":" + source + " PART :" + channel + " " + reason
 #define ERR_UNKNOWNMODE(nickname, mode) "472 " + nickname + " " + mode + " :is unknown mode char to me"
 #define RPL_PONG(prefix, token) ":" + prefix + " PONG :" + token
 #define ERR_USERONCHANNEL(source, channel) "443 " + source + " " + channel + " :is already on channel"
@@ -47,7 +47,8 @@ class client
         std::string password;
         channel* ChannelPtr;
         std::string servername;
-        // std::vector<channel*>  channels;
+        std::vector<std::string>  Operators;
+        std::vector<std::string> modes;
 
     public:
     /* Getters */
@@ -61,16 +62,24 @@ class client
         std::string     get_hostname() const;
         int get_id() const;
         std::vector<channel*>       get_channel() const;
+        channel* get_channel_by_name(const std::string& name) const;
         std::string is_registered();
         std::string get_password() const;
         void sendMessage(const std::string& message);
         void quiter();
-        void invite_to_channel(int fd, client* invitedClient, channel* channel);
+        void invite_to_channel(int fd, std::map<int, client>::iterator& invitedClient, channel* channel);
         std::string get_prefix() const;
         void write(int fd, const std::string& message) const;
         void quit_network(std::map<int, client>& clients, int fd, const std::string& reason) const;
         void join_channel(channel* channel);
         void remove_channel(const channel* channelToRemove);
+        std::vector<std::string> &get_operators();
+        void set_operators(const std::vector<std::string>& operators);
+        void add_operator(std::string userId);
+        void remove_operator(std::string &mode);
+        void set_mode(char mode, bool active);
+        void add_mode(const std::string& mode);
+        void remove_mode(const std::string& mode);
 
     /**setes*/
         void            set_nickname(const std::string nickn);

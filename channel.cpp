@@ -2,17 +2,16 @@
 #include <algorithm>
 
 channel::channel(std::string& name, int owner, std::string topic, std::string key)
-		: Name(name), Owner(owner), Key(key), Topic(topic), _allowExternalMessages(false), _limit(-1) {
+		: Name(name), Owner(owner), Key(key), Topic(topic), _limit(-1) {
         Admin.push_back(owner); // L'utilisateur qui crée le canal devient automatiquement administrateur
         Users.push_back(owner);
 }
 
-channel::channel(): Owner(-1), _allowExternalMessages(false), _limit(-1) {}
+channel::channel(): Owner(-1), _limit(-1) {}
 
 channel::channel(const  channel &original)
 : Name(original.Name), Owner(original.Owner), Users(original.Users), Key(original.Key),
-          Topic(original.Topic), clients(original.clients), _allowExternalMessages(original._allowExternalMessages),
-          _limit(original._limit), Admin(original.Admin) 
+          Topic(original.Topic), _limit(original._limit), Admin(original.Admin)
 {
 
 }
@@ -29,66 +28,51 @@ channel &channel::operator=(const channel &original)
             Users = original.Users;
             Key = original.Key;
             Topic = original.Topic;
-            clients = original.clients;
-            _allowExternalMessages = original._allowExternalMessages;
             _limit = original._limit;
             Admin = original.Admin;
+            // Operators = original.Operators;
         }
         return *this;
     }
 
-void channel::broadcast(const std::string& message, client* exclu)
+void channel::broadcast(const std::string& message, std::map<int, client>& clients, int curr_client_fd)
 {
-    for (std::vector<client*>::iterator it = clients.begin(); it != clients.end(); ++it)
+    for (std::vector<int>::iterator it = Users.begin(); it != Users.end(); ++it)
     {
-        if (*it == exclu)
-        {
+        if (*it == curr_client_fd)
             continue;
-        }
-
-        (*it)->sendMessage(message);
+        clients[*it].write(*it, message);
     }
 }
 
 
-void channel::remove_client(const client* clientToRemove)
-{
-    for (std::vector<client*>::iterator it = clients.begin(); it != clients.end();)
-    {
-        if (*it == clientToRemove)
-        {
-            it = clients.erase(it);
-            break;
-        }
-        else
-        {
-            ++it;
-        }
-    }
-}
+// void channel::remove_client(const client* clientToRemove)
+// {
+//     for (std::vector<client*>::iterator it = clients.begin(); it != clients.end();)
+//     {
+//         if (*it == clientToRemove)
+//         {
+//             it = clients.erase(it);
+//             break;
+//         }
+//         else
+//         {
+//             ++it;
+//         }
+//     }
+// }
 
-client* channel::getClientById(int userId) const {
-    for (std::vector<client*>::const_iterator it = clients.begin(); it != clients.end(); ++it) {
-        if ((*it)->get_fd() == userId) {
-            return *it;
-        }
-    }
-    return NULL;
-}
-
-bool channel::is_member(int userId) const {
-    // Vérifier si l'utilisateur est membre, administrateur ou propriétaire du canal
-    if (std::find(Users.begin(), Users.end(), userId) != Users.end() ||
-        std::find(Admin.begin(), Admin.end(), userId) != Admin.end() ||
-        Owner == userId) {
+bool channel::is_member(int fd) const {
+    if (std::find(Users.begin(), Users.end(), fd) != Users.end() ||
+        this->is_admin(fd) || Owner == fd) {
         return true;
     }
     return false;
 }
 
-bool channel::is_admin(int userId) const {
+bool channel::is_admin(int fd) const {
     for (std::vector<int>::const_iterator it = Admin.begin(); it != Admin.end(); ++it) {
-        if (*it == userId) {
+        if (*it == fd) {
             return true;
         }
     }
@@ -102,14 +86,6 @@ channel* channel::get_channel_by_name(const std::string& channelName, const std:
         }
     }
     return NULL;
-}
-
-bool channel::isExternalMessage() const {
-    return _allowExternalMessages;
-}
-
-void channel::setExternalMessage(bool allow) {
-    _allowExternalMessages = allow;
 }
 
 /* gesters*/
@@ -128,6 +104,10 @@ std::string channel::get_Topic() const
 {
 	return this->Topic;
 }
+
+// std::vector<int>& channel::get_operators() {
+//     return Operators;
+// }
 
 std::vector<int>  &channel::getadmin()
 {
@@ -179,6 +159,15 @@ void channel::set_Users(const std::vector<int> users)
 void channel::addUser(int userId)
 {
    Users.push_back(userId);
+}
+
+void channel::remove_user(int userId)
+{
+    std::vector<int>::iterator it = std::find(Users.begin(), Users.end(), userId);
+
+    if (it == Users.end())
+        return;
+    Users.erase(it);
 }
 
 void channel::set_limit(int limit)

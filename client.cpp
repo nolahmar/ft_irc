@@ -1,5 +1,6 @@
 #include "client.hpp"
 #include "channel.hpp"
+#include <algorithm>
 
 client::client(): fd(-1), id(-1), ChannelPtr(NULL)
 {
@@ -42,6 +43,7 @@ void client::write(int fd, const std::string& message) const {
 
 void client::sendMessage(const std::string& message) {
     // Envoyer le message au socket du client
+    std::cout << "fd: " << fd << std::endl;
     send(fd, message.c_str(), message.length(), 0);
 }
 
@@ -63,28 +65,15 @@ void client::quit_network(std::map<int, client>& clients, int fd, const std::str
 }
 
 
-void client::join_channel(channel* chan) {
-    if (!chan->is_member(id)) {
-        chan->add_user(id);
-        channels.push_back(chan);
-    }
-}
-
-void client::invite_to_channel(int fd, client* invitedClient, channel* channel) {
-    if (!channel) {
-        write(fd, ERR_NOSUCHCHANNEL(get_nickname(), channel->get_name()));
-        return;
-    }
-    if (!channel->is_member(invitedClient->get_fd()) && channel->getOwner() != fd) {
-        write(fd, ERR_NOTONCHANNEL(get_nickname(), channel->get_name()));
-        return;
-    }
-
-    // Envoyer un message d'invitation à l'utilisateur invité
-    invitedClient->write(fd, "INVITE " + get_nickname() + " " + channel->get_name());
-    invitedClient->join_channel(channel);
-
-    // Envoyer un message de confirmation à l'utilisateur qui a envoyé l'invitation
+void client::invite_to_channel(int fd, std::map<int, client>::iterator& invitedClient, channel* channel) {
+    int target = invitedClient->first;
+    //check mode !!!!! on utilison std::vector<std::string>Operators
+    // Envoyer un message d'invitation à l'utilisateur invité !!! Merciiii
+    write(target, "INVITE " + get_nickname() + " " + channel->get_name());
+    // Join target to the target channel
+    invitedClient->second.channels.push_back(channel);
+    channel->addUser(target);
+    // Envoyer un message de confirmation à l'utilisateur qui a envoyé l'invitation !!! Merciiii
     write(fd, RPL_INVITING(get_nickname(), channel->get_name()));
 }
 
@@ -94,10 +83,10 @@ void client::remove_channel(const channel* channelToRemove)
 {
     for (std::vector<channel*>::iterator it = channels.begin(); it != channels.end(); ++it)
     {
-        if (*it == channelToRemove)
+        if ((*it)->get_name() == channelToRemove->get_name())
         {
             it = channels.erase(it);
-            break;
+            return;
         }
     }
 }
@@ -166,6 +155,15 @@ std::vector<channel *> client::get_channel() const
 	return channels;
 }
 
+channel* client::get_channel_by_name(const std::string& name) const {
+
+    for (std::vector<channel*>::const_iterator it = this->channels.begin(); it != this->channels.end(); ++it)
+    {
+        if ((*it)->get_name() == name) 
+            return *it;
+    }
+    return NULL;
+}
 /* Setters */
 
 void client::set_nickname(const std::string nickn)
@@ -197,6 +195,63 @@ void           client:: set_servername(const std::string    server_n)
 {
 	this->servername = server_n;
 }
+
+std::vector<std::string> &client::get_operators() {
+    return Operators;
+}
+
+void client::set_operators(const std::vector<std::string>& operators) {
+    Operators = operators;
+}
+
+void client::add_operator(std::string userId) {
+    Operators.push_back(userId);
+}
+
+void client::remove_operator(std::string& mode) 
+{
+    // Recherche et suppression de l'utilisateur du vecteur des opérateurs
+    std::vector<std::string>::iterator it;
+    for (it = Operators.begin(); it != Operators.end(); ++it) {
+        if (*it == mode) {
+            Operators.erase(it);
+            break;
+        }
+    }
+}
+
+void client::set_mode(char mode, bool active) {
+        if (active) {
+            add_mode(std::string(1, mode));
+        } else {
+            remove_mode(std::string(1, mode));
+        }
+    }
+
+void client::add_mode(const std::string& mode) {
+        if (std::find(modes.begin(), modes.end(), mode) == modes.end()) {
+            modes.push_back(mode);
+        }
+    }
+
+void client::remove_mode(const std::string& mode) {
+        std::vector<std::string>::iterator it = std::find(modes.begin(), modes.end(), mode);
+        if (it != modes.end()) {
+            modes.erase(it);
+        }
+    }
+
+// bool channel::is_operator(int userId) const {
+//     // Vérifie si l'utilisateur est un opérateur en vérifiant s'il est présent dans le vecteur des opérateurs
+//     std::vector<int>::const_iterator it;
+//     for (it = Operators.begin(); it != Operators.end(); ++it) {
+//         if (*it == userId) {
+//             return true;
+//         }
+//     }
+//     return false;
+// }
+
 
 client::~client()
 {

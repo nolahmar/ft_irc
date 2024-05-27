@@ -141,22 +141,19 @@ void command::excute(const std::string& command,const std::vector<std::string>& 
 	{
         ft_part(parameters, clients, fd);
     }
-	else if (command == "KILL")
-	{
-        ft_kill(NULL, clients, fd, "No reason given");
-    }
-	else if (command == "CAP")
-	{
-        cap(parameters[0], parameters[1], fd);
-    }
 	else if (command == "INVITE")
 	{
         invite(fd, parameters, clients, channels);
+    }
+	else if (command == "PONG")
+	{
+        ft_ping(parameters, clients, fd);
     }
 	else if (command == "MODE")
 	{
         mode(parameters, clients, channels, fd);
     }
+	//else if (commans)
 	else
 		{
 				ft_response(fd,"Unknown command: "); 
@@ -482,19 +479,19 @@ void command::ft_join(std::vector<std::string> parametres , std::map<int ,client
 			}
 			if(it == channels.end())  // ila wslt end makntch channel create
 			{
-			std::string key = ""; // 
-			if(parametres.size() > 1)
-			{
-			std::string buffer1;
-			getline(iss2,buffer1,',');
+				std::string key = ""; // 
+				if(parametres.size() > 1)
+				{
+				std::string buffer1;
+				getline(iss2,buffer1,',');
 
-			if (!buffer.empty())
-				key = buffer1;
-			}
-			channel* newchannel = new channel(buffer, fd, "", key);
-			channels.push_back(newchannel); 
-			clients[fd].channels.push_back((newchannel));
-			ft_response(fd, "created and joined");
+				if (!buffer.empty())
+					key = buffer1;
+				}
+				channel* newchannel = new channel(buffer, fd, "", key);
+				channels.push_back(newchannel); 
+				clients[fd].channels.push_back((newchannel));
+				ft_response(fd, "created and joined");
 			}
 	}
 			// create channel that not exist 
@@ -733,6 +730,15 @@ int ft_ckeak(std::string &nick, std::map<int, client>& clients)
 	return 0;
 }
 
+int get_client_id_by_nickname(const std::string &nick, const std::map<int, client>& clients) {
+    for (std::map<int, client>::const_iterator it = clients.begin(); it != clients.end(); ++it) {
+        if (it->second.get_nickname() == nick) {
+            return it->first;
+        }
+    }
+    return -1; // Retourner -1 si le pseudonyme n'est pas trouvé
+}
+
 //santaxe ---> PRIVMSG noni :hello
 void command::ft_privmsg(std::vector<std::string> args, std::map<int, client>& clients, int fd)
 {
@@ -753,17 +759,14 @@ void command::ft_privmsg(std::vector<std::string> args, std::map<int, client>& c
     if (target.at(0) == '#')
     {
         channel* chan = NULL;
-        std::vector<channel*> userChannels = clients[fd].get_channel();
 
+		target.erase(target.begin());
         // Recherche du canal par son nom
-        for (std::vector<channel*>::iterator it = userChannels.begin(); it != userChannels.end(); ++it)
+        for (std::map<int, client>::iterator it = clients.begin(); it != clients.end(); ++it)
         {
-            channel* ch = *it;
-            if (ch->get_name() == target)
-            {
-                chan = ch;
-                break;
-            }
+			chan = it->second.get_channel_by_name(target);
+			if (chan)
+				break;
         }
 
         // Canal non trouvé
@@ -772,20 +775,16 @@ void command::ft_privmsg(std::vector<std::string> args, std::map<int, client>& c
             ft_response(fd, "ERR_NOSUCHCHANNEL");
             return;
         }
-
-        // Si le canal n'autorise pas les messages externes
-        if (!chan->isExternalMessage())
-        {
-            // Vérifier si le client est dans le canal
-            if (!chan->is_member(clients[fd].get_id()))
-            {
-                ft_response(fd, "ERR_CANNOTSENDTOCHAN");
-                return;
-            }
-        }
+		// std::cout << "\nClient ID: " << clients[fd].get_id() << std::endl;
+		// Vérifier si le client est dans le canal
+		if (!chan->is_member(fd))
+		{
+			ft_response(fd, "ERR_CANNOTSENDTOCHAN");
+			return;
+		}
 
         // Diffuser le message au canal
-        chan->broadcast(RPL_PRIVMSG(clients[fd].get_prefix(), target, message), &clients[fd]);
+        chan->broadcast(RPL_PRIVMSG(clients[fd].get_prefix(), target, message), clients, fd);
         return;
     }
 
@@ -815,7 +814,7 @@ void command::ft_privmsg(std::vector<std::string> args, std::map<int, client>& c
 
 void command::ft_notice(std::vector<std::string> args, std::map<int, client>& clients, int fd)
 {
-  if (args.size() < 2 || args[0].empty() || args[1].empty() || args[1].at(0) != ':')
+   if (args.size() < 2 || args[0].empty() || args[1].empty() || args[1].at(0) != ':')
     {
         ft_response(fd, "ERR_NEEDMOREPARAMS");
         return;
@@ -832,17 +831,14 @@ void command::ft_notice(std::vector<std::string> args, std::map<int, client>& cl
     if (target.at(0) == '#')
     {
         channel* chan = NULL;
-        std::vector<channel*> userChannels = clients[fd].get_channel();
 
+		target.erase(target.begin());
         // Recherche du canal par son nom
-        for (std::vector<channel*>::iterator it = userChannels.begin(); it != userChannels.end(); ++it)
+        for (std::map<int, client>::iterator it = clients.begin(); it != clients.end(); ++it)
         {
-            channel* ch = *it;
-            if (ch->get_name() == target)
-            {
-                chan = ch;
-                break;
-            }
+			chan = it->second.get_channel_by_name(target);
+			if (chan)
+				break;
         }
 
         // Canal non trouvé
@@ -852,19 +848,15 @@ void command::ft_notice(std::vector<std::string> args, std::map<int, client>& cl
             return;
         }
 
-        // Si le canal n'autorise pas les messages externes
-        if (!chan->isExternalMessage())
-        {
-            // Vérifier si le client est dans le canal
-            if (!chan->is_member(clients[fd].get_id()))
-            {
-                ft_response(fd, "ERR_CANNOTSENDTOCHAN");
-                return;
-            }
-        }
+		// Vérifier si le client est dans le canal
+		if (!chan->is_member(fd))
+		{
+			ft_response(fd, "ERR_CANNOTSENDTOCHAN");
+			return;
+		}
 
         // Diffuser le message au canal
-        chan->broadcast(RPL_NOTICE(clients[fd].get_prefix(), target, message), &clients[fd]);
+        chan->broadcast(RPL_NOTICE(clients[fd].get_prefix(), target, message), clients, fd);
         return;
     }
 
@@ -891,6 +883,14 @@ void command::ft_notice(std::vector<std::string> args, std::map<int, client>& cl
 
 // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void command::ft_pong(std::vector<std::string> args, std::map<int, client>& clients, int fd) {
+    if (args.empty()) {
+        ft_response(fd, "ERR_NEEDMOREPARAMS");
+        return;
+    }
+    std::cout << "Received PONG from client: " << clients[fd].get_nickname() << std::endl;
+}
+
 void command::ft_ping(std::vector<std::string> args, std::map<int, client>& clients, int fd) {
     if (args.empty()) {
         ft_response(fd, "ERR_NEEDMOREPARAMS");
@@ -903,15 +903,24 @@ void command::ft_ping(std::vector<std::string> args, std::map<int, client>& clie
     clients[fd].write(fd, response);
 }
 
-void command::ft_pong(std::vector<std::string> args, std::map<int, client>& clients, int fd) {
-    if (args.empty()) {
-        ft_response(fd, "ERR_NEEDMOREPARAMS");
-        return;
-    }
-    std::cout << "Received PONG from client: " << clients[fd].get_nickname() << std::endl;
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+std::vector<std::string> split(std::string s)
+{
+	std::stringstream ss(s);
+	std::vector<std::string> res;
+	std::string tmp;
+	
+	while (std::getline(ss, tmp, ','))
+		res.push_back(tmp);
+	return res;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void remove_client_from_channel(client& target, channel *ch, int fd)
+{
+	ch->remove_user(fd);	
+	target.remove_channel(ch);
+}
 
 void command::ft_part(std::vector<std::string> args, std::map<int, client>& clients, int fd)
 {
@@ -920,105 +929,42 @@ void command::ft_part(std::vector<std::string> args, std::map<int, client>& clie
         ft_response(fd, "ERR_NEEDMOREPARAMS");
         return;
     }
+	std::vector<std::string> targetChannels = split(args[0]);
+	// TODO: jion all messages
+	std::string reason = args.size() > 1 ? args[1] : "";
 
-    // Liste des canaux auxquels le client est connecté
-    const std::vector<channel*>& userChannels = clients[fd].get_channel();
+	for (std::vector<std::string>::iterator ch_it = targetChannels.begin(); ch_it != targetChannels.end(); ++ch_it)
+	{
+		channel *ch = NULL;
+		std::string nickname = clients[fd].get_nickname();
 
-    for (size_t i = 0; i < args.size(); ++i) 
-    {
-        const std::string& channelName = args[i];
-        bool foundChannel = false;
-
-        // Recherche du canal dans la liste des canaux du client
-        for (size_t j = 0; j < userChannels.size(); ++j)
+		// Check if channel exists and get its object
+		for (std::map<int, client>::iterator it = clients.begin(); it != clients.end(); ++it)
         {
-            channel* chan = userChannels[j];
-            if (chan->get_name() == channelName)
-            {
-                // Envoyer un message de départ à tous les membres du canal
-                chan->broadcast(RPL_PART(clients[fd].get_prefix(), channelName), &clients[fd]);
-                chan->remove_client(&clients[fd]);
-                foundChannel = true;
-                break;
-            }
+			ch = it->second.get_channel_by_name(*ch_it);
+			if (ch)
+				break;
         }
-        if (!foundChannel)
-        {
-            ft_response(ft_ckeak(args[0], clients), "ERR_NOTONCHANNEL");
-        }
-    }
+
+		if (!ch)
+		{
+			ft_response(fd, std::string(ERR_NOSUCHCHANNEL(nickname, *ch_it)).c_str());
+			continue;
+		}
+		if (!ch->is_member(fd))
+		{
+			ft_response(fd, std::string(ERR_NOTONCHANNEL(nickname, *ch_it)).c_str());
+			continue;
+		}
+		remove_client_from_channel(clients[fd], ch, fd);
+		clients[fd].write(fd, RPL_PART(clients[fd].get_nickname(), *ch_it, reason));
+		ch->broadcast(RPL_PART(clients[fd].get_nickname(), *ch_it, reason), clients, fd);
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void command::ft_kill(client* operatorClient, std::map<int, client>& clients, int fd, const std::string& reason) {
-    // Recherche du client cible
-    std::map<int, client>::iterator it = clients.find(fd);
-    client* targetClient = NULL;
-    if (it != clients.end()) {
-        targetClient = &(it->second);
-    }
-
-    // Vérification de l'existence du client cible
-    if (!targetClient) {
-        ft_response(fd, "ERR_NOSUCHSERVER ");
-        return;
-    }
-
-    // Obtention du surnom de l'opérateur
-    std::string killer = operatorClient->get_nickname();
-
-    // Message de kill
-    std::string killMessage = "Killed by operator (" + killer + "): " + reason;
-
-    // Quitter le réseau pour le client cible
-    targetClient->quit_network(clients, fd, reason);
-
-    // Envoi du message de kill
-    targetClient->write(fd, "Closing Link: " + targetClient->get_nickname() + killMessage);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void send_message_to_server(const std::string& message, int fd) {
-    const char* buffer = message.c_str();
-    size_t length = message.size();  // Utiliser size() au lieu de strlen
-
-    size_t total_bytes_written = 0;
-
-    while (total_bytes_written < length) {
-        ssize_t bytes_written = write(fd, buffer + total_bytes_written, length - total_bytes_written);
-        
-        if (bytes_written == -1) {
-            std::cerr << "Erreur lors de l'envoi du message au serveur" << std::endl;
-            return;
-        }
-        
-        total_bytes_written += bytes_written;
-    }
-    
-    std::cout << "Message envoyé au serveur avec succès" << std::endl;
-}
-
-
-void command::cap(const std::string& subcommand, const std::string& capabilities, int fd) {
-    std::string message = "CAP " + subcommand;
-
-    if (subcommand == "REQ" || subcommand == "ACK" || subcommand == "NAK") {
-        if (!capabilities.empty()) {
-            message += " :" + capabilities;
-        }
-    }
-    else if (subcommand != "LS") {
-        std::cerr << "Sous-commande inconnue : " << subcommand << std::endl;
-        return;
-    }
-
-    send_message_to_server(message, fd);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+// NICK CHA
 void command::invite(int fd, const std::vector<std::string>& args, std::map<int, client>& clients, std::vector<channel*>& channels) {
     client& sender = clients[fd];
 
@@ -1030,8 +976,9 @@ void command::invite(int fd, const std::vector<std::string>& args, std::map<int,
     std::string invitedNickname = args[0];
     std::string channelName = args[1];
 
-    // Trouver le client invité par son pseudo
+    // Trouver le client invité par son pseudo !!! Merciiii
     std::map<int, client>::iterator invitedClientIt = clients.end();
+
     for (std::map<int, client>::iterator it = clients.begin(); it != clients.end(); ++it) {
         if (it->second.get_nickname() == invitedNickname) {
             invitedClientIt = it;
@@ -1039,13 +986,15 @@ void command::invite(int fd, const std::vector<std::string>& args, std::map<int,
         }
     }
 
+	// Check if no target user
     if (invitedClientIt == clients.end()) {
         ft_response(fd, "ERR_NOSUCHNICK");
         return;
     }
 
-    // Trouver le canal par son nom
+    // Trouver le canal par son nom !!! Merciiiii
     std::vector<channel*>::iterator chanIt = channels.end();
+
     for (std::vector<channel*>::iterator it = channels.begin(); it != channels.end(); ++it) {
         if ((*it)->get_name() == channelName) {
             chanIt = it;
@@ -1053,13 +1002,25 @@ void command::invite(int fd, const std::vector<std::string>& args, std::map<int,
         }
     }
 
+	// Check if no target channel
     if (chanIt == channels.end()) {
         ft_response(fd, "ERR_NOSUCHCHANNEL");
         return;
     }
 
+	// Check if the sender is a member of the target channel
+	if (!(*chanIt)->is_member(fd)) {
+		ft_response(fd, "ERR_NOTONCHANNEL");
+		return;
+	}
+
+	// Check if the target user is not already a member of the target channel
+	if ((*chanIt)->is_member(invitedClientIt->first)) {
+		ft_response(fd, "ERR_USERONCHANNEL");
+		return;
+	}
     // Inviter le client au canal
-    sender.invite_to_channel(fd, &(invitedClientIt->second), *chanIt);
+    sender.invite_to_channel(fd, invitedClientIt, *chanIt);
 }
 
 
@@ -1096,35 +1057,61 @@ void command::mode(std::vector<std::string> args, std::map<int, client>& clients
     std::string modeStr = args[1];
     bool active = true; // Indicates whether to add or remove the mode
     std::string param;
-    
+
     for (size_t i = 0; i < modeStr.size(); ++i) {
         char c = modeStr[i];
         if (c == '+' || c == '-') {
             active = (c == '+');
         } else {
             // Modes requiring arguments
-            if (c == 'l' || c == 'k') {
-                if (i + 1 >= args.size()) {
+            if (c == 'l' || c == 'k' || c == 'o') {
+                if (i + 1 >= modeStr.size() && args.size() < 3) {
                     ft_response(fd, "ERR_NEEDMOREPARAMS");
                     return;
                 }
-                param = args[++i];
+                param = args.size() > 2 ? args[2] : modeStr.substr(i + 1);
             }
 
             switch (c) {
-                case 'n':
-                    chan->setExternalMessage(active);
-                    chan->broadcast(RPL_MODE(clients[fd].get_prefix(), chan->get_name(), (active ? "+n" : "-n"), ""), NULL);
-                    break;
                 case 'l':
-                    int limit;
-                    std::istringstream(param) >> limit;
-                    chan->set_limit(limit);
-                    chan->broadcast(RPL_MODE(clients[fd].get_prefix(), chan->get_name(), (active ? "+l" : "-l"), (active ? param : "")), NULL);
+                    if (active) {
+                        int limit;
+                        std::istringstream(param) >> limit;
+                        chan->set_limit(limit);
+                    } else {
+                        chan->set_limit(0);
+                    }
+                    chan->broadcast(RPL_MODE(clients[fd].get_prefix(), chan->get_name(), (active ? "+l" : "-l"), (active ? param : "")), clients, fd);
                     break;
                 case 'k':
                     chan->set_key(active ? param : "");
-                    chan->broadcast(RPL_MODE(clients[fd].get_prefix(), chan->get_name(), (active ? "+k" : "-k"), (active ? param : "")), NULL);
+                    chan->broadcast(RPL_MODE(clients[fd].get_prefix(), chan->get_name(), (active ? "+k" : "-k"), (active ? param : "")), clients, fd);
+                    break;
+                case 'i':
+                    if (active) {
+                        clients[fd].add_mode("+i");
+                    } else {
+                        clients[fd].remove_mode("-i");
+                    }
+                    chan->broadcast(RPL_MODE(clients[fd].get_prefix(), chan->get_name(), (active ? "+i" : "-i"), ""), clients, fd);
+                    break;
+                case 't':
+                    if (active) {
+                        clients[fd].add_mode("+t");
+                    } else {
+                        clients[fd].remove_mode("-t");
+                    }
+                    chan->broadcast(RPL_MODE(clients[fd].get_prefix(), chan->get_name(), (active ? "+t" : "-t"), ""), clients, fd);
+                    break;
+                case 'o':
+                    if (active) {
+                        clients[fd].add_operator(param);
+                        clients[fd].add_operator(param);
+                    } else {
+                        clients[fd].remove_operator(param);
+                        clients[fd].remove_operator(param);
+                    }
+                    chan->broadcast(RPL_MODE(clients[fd].get_prefix(), chan->get_name(), (active ? "+o" : "-o"), param), clients, fd);
                     break;
                 default:
                     ft_response(fd, "ERR_UNKNOWNMODE");
@@ -1133,6 +1120,7 @@ void command::mode(std::vector<std::string> args, std::map<int, client>& clients
         }
     }
 }
+
 
 
 command::~command()

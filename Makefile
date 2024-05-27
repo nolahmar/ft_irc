@@ -2,7 +2,7 @@ F_NAME = server.cpp client.cpp channel.cpp main.cpp command.cpp
 
 NAME = ircserv
 CXX = c++
-CXXFLAGS = -std=c++98 -Wall -Wextra -Werror -fsanitize=address
+CXXFLAGS = -std=c++98 -Wall -Wextra -Werror #-fsanitize=address
 
 O_FILE = $(F_NAME:.cpp=.o)
 

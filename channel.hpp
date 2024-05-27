@@ -20,8 +20,7 @@ class channel
         std::vector<int>  Users;
         std::string Key;
         std::string Topic;
-        std::vector<client *> clients;
-        bool _allowExternalMessages;
+        //std::vector<int> Operators; // Vecteur pour stocker les identifiants des opérateurs de canal
         int _limit; // Variable pour stocker la limite du nombre d'utilisateurs
     public:
         std::vector<int>  Admin;
@@ -43,15 +42,14 @@ class channel
         void set_Users(const std::vector<int> users);
         void set_limit(int limit);
         void addUser(int userId);
-        void broadcast(const std::string& message, client* exclu);
-        void remove_client(const client* clientToRemove);
+        void remove_user(int userId);
+        void broadcast(const std::string& message, std::map<int, client>& clients, int curr_client_fd);
+        // void remove_client(const client* clientToRemove);
+        // bool is_member(client* user) const ;
         bool is_member(int userId) const ;
         bool is_admin(int userId) const;
         void add_user(int userId);
         channel* get_channel_by_name(const std::string& channelName, const std::vector<channel*>& channels);
-        bool isExternalMessage() const;
-        void setExternalMessage(bool allow);
-        client* getClientById(int userId) const;
         ~channel();
 };
 
