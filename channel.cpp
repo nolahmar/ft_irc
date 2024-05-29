@@ -79,6 +79,10 @@ bool channel::is_admin(int fd) const {
     return false;
 }
 
+bool channel::is_operator(int userId) const {
+  return this->Operators.count(userId) != 0;
+}
+
 channel* channel::get_channel_by_name(const std::string& channelName, const std::vector<channel*>& channels) {
     for (size_t i = 0; i < channels.size(); ++i) {
         if (channels[i]->get_name() == channelName) {
@@ -161,6 +165,11 @@ void channel::addUser(int userId)
    Users.push_back(userId);
 }
 
+void channel::add_operator(int userId)
+{
+  this->Operators.insert(userId);
+}
+
 void channel::remove_user(int userId)
 {
     std::vector<int>::iterator it = std::find(Users.begin(), Users.end(), userId);
@@ -178,4 +187,79 @@ void channel::set_limit(int limit)
 channel::~channel()
 {
 	std::cout << "Destrctor" << std::endl;
+}
+
+// {'i'}
+void channel::change_invite_only_mode(std::string& mode) {
+  switch (mode) {
+    case "+i":
+      this->mode.insert('i');
+      break;
+    default:
+      this->mode.erase('i');
+      break;
+  }  
+}
+
+void channel::change_topic_mode(std::string& mode) {
+  switch (mode) {
+    case "+t":
+      this->mode.insert('t');
+      break;
+    default:
+      this->mode.erase('t');
+      break;
+  }  
+}
+
+bool channel::change_key_mode(std::vector<std::string>& args, std::string& mode, int fd) {
+ switch (mode) {
+   case "+k":
+     if (args.size() < 3) {
+        ft_response(fd, "ERR_NEEDMOREPARAMS");
+        return false;
+     }
+     this->mode.insert('k');
+     this->Key = args[2];
+     break;
+  default:
+    this->mode.erase('k');
+    this->key = "";
+ } 
+ return true;
+}
+
+bool channel::change_operator_mode(std::vector<std::string>& args, std::string& mode, int fd) {
+  if (args.size() < 3) {
+    ft_response(fd, "ERR_NEEDMOREPARAMS");
+    return false;
+  } 
+  // check if the user exist
+  // check if the user is a member
+  switch (mode)
+    case "+o":
+      this->Operators.insert(userFd);
+      break;
+    default:
+      this->Operators.erase(userFd);
+  }
+  return true;
+}
+
+bool channel::change_limit_mode(std::vector<std::string>& args, std::string& mode) {
+  switch (mode) {
+    case "+l":
+        // you can add a check if the number is valid
+       if (args.size() < 3) {
+          ft_response(fd, "ERR_NEEDMOREPARAMS");
+          return false;
+       }
+      this->mode.insert('l');
+      this->_limit = atoi(args[2]);
+      break;
+    default:
+      this->mode.erase('l');
+      this->_limit = 0;
+  } 
+  return true;
 }

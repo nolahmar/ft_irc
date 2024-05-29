@@ -1048,76 +1048,46 @@ void command::mode(std::vector<std::string> args, std::map<int, client>& clients
         return;
     }
 
-    if (std::find(chan->getadmin().begin(), chan->getadmin().end(), fd) == chan->getadmin().end()) {
-        ft_response(fd, "ERR_CHANOPRIVSNEEDED");
-        return;
+    // user is not an operator
+    if (!chan->is_operator(fd)) {
+      ft_response(fd, "ERR_CHANOPRIVSNEEDED");
+      return;
     }
+
 
     // Changing the mode
     std::string modeStr = args[1];
     bool active = true; // Indicates whether to add or remove the mode
     std::string param;
 
-    for (size_t i = 0; i < modeStr.size(); ++i) {
-        char c = modeStr[i];
-        if (c == '+' || c == '-') {
-            active = (c == '+');
-        } else {
-            // Modes requiring arguments
-            if (c == 'l' || c == 'k' || c == 'o') {
-                if (i + 1 >= modeStr.size() && args.size() < 3) {
-                    ft_response(fd, "ERR_NEEDMOREPARAMS");
-                    return;
-                }
-                param = args.size() > 2 ? args[2] : modeStr.substr(i + 1);
-            }
-
-            switch (c) {
-                case 'l':
-                    if (active) {
-                        int limit;
-                        std::istringstream(param) >> limit;
-                        chan->set_limit(limit);
-                    } else {
-                        chan->set_limit(0);
-                    }
-                    chan->broadcast(RPL_MODE(clients[fd].get_prefix(), chan->get_name(), (active ? "+l" : "-l"), (active ? param : "")), clients, fd);
-                    break;
-                case 'k':
-                    chan->set_key(active ? param : "");
-                    chan->broadcast(RPL_MODE(clients[fd].get_prefix(), chan->get_name(), (active ? "+k" : "-k"), (active ? param : "")), clients, fd);
-                    break;
-                case 'i':
-                    if (active) {
-                        clients[fd].add_mode("+i");
-                    } else {
-                        clients[fd].remove_mode("-i");
-                    }
-                    chan->broadcast(RPL_MODE(clients[fd].get_prefix(), chan->get_name(), (active ? "+i" : "-i"), ""), clients, fd);
-                    break;
-                case 't':
-                    if (active) {
-                        clients[fd].add_mode("+t");
-                    } else {
-                        clients[fd].remove_mode("-t");
-                    }
-                    chan->broadcast(RPL_MODE(clients[fd].get_prefix(), chan->get_name(), (active ? "+t" : "-t"), ""), clients, fd);
-                    break;
-                case 'o':
-                    if (active) {
-                        clients[fd].add_operator(param);
-                        clients[fd].add_operator(param);
-                    } else {
-                        clients[fd].remove_operator(param);
-                        clients[fd].remove_operator(param);
-                    }
-                    chan->broadcast(RPL_MODE(clients[fd].get_prefix(), chan->get_name(), (active ? "+o" : "-o"), param), clients, fd);
-                    break;
-                default:
-                    ft_response(fd, "ERR_UNKNOWNMODE");
-                    return;
-            }
-        }
+  // #chan +i | #chan -i
+  // #chan +t | #chan -t
+  // #char +k key | #chan -k
+  // #chan +o user | #chan -o user
+  // #chan +l n | #chan -l
+    switch (modeStr) {
+      case "+i":
+      case "-i":
+        chan->change_invite_only_mode(modeStr);
+        break;
+      case "+t":
+      case "-t":
+        chan->change_topic_mode(modeStr);
+        break;
+      case "+k":
+      case "-k":
+        chan->change_key_mode(modeStr);
+        break;
+      case "+o":
+      case "-o":
+        chan->change_operator_mode(modeStr, fd);
+        break;
+      case "+l":
+      case "-l":
+        chan->change_limit_mode(modeStr);
+        break;
+      default:
+        ft_response(fd, "ERR_USERNOTINCHANNEL");
     }
 }
 

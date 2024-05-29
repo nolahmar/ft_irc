@@ -5,7 +5,6 @@
 client::client(): fd(-1), id(-1), ChannelPtr(NULL)
 {
 	state = "none"; // pass - usernam mazl medkhl
-	
 }
 
 client::client(const client& original) {
