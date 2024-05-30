@@ -31,12 +31,11 @@ class command
 	void ft_Quit(std::vector<std::string> parameters, std::map<int, client>& clients, int fd, std::vector<channel *>& channels);
 	void ft_privmsg(std::vector<std::string> args, std::map<int, client>& clients, int fd);
 	void ft_notice(std::vector<std::string> args, std::map<int, client>& clients, int fd);
-	void ft_ping(std::vector<std::string> args, std::map<int, client>& clients, int fd);
 	void ft_part(std::vector<std::string> args, std::map<int, client>& clients, int fd);
-	void ft_kill(client* operatorClient, std::map<int, client>& clients, int fd, const std::string& reason);
 	void invite(int fd, const std::vector<std::string>& args, std::map<int, client>& clients, std::vector<channel*>& channels);
-	void mode(std::vector<std::string> args, std::map<int, client>& clients, std::vector<channel*>& channels, int fd);
-	void ft_pong(std::vector<std::string> args, std::map<int, client>& clients, int fd);
+	void mode(std::map<int, client>&clients, std::vector<std::string> args, std::vector<channel*>& channels, int fd);
+	void ping(std::vector<std::string> args, std::map<int, client>& clients, int fd);
+	void pong(std::map<int, client>& clients, int fd);
 	// std::string welcomemsg(void);
 
 	~command();

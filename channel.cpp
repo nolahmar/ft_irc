@@ -165,10 +165,6 @@ void channel::addUser(int userId)
    Users.push_back(userId);
 }
 
-void channel::add_operator(int userId)
-{
-  this->Operators.insert(userId);
-}
 
 void channel::remove_user(int userId)
 {
@@ -188,78 +184,95 @@ channel::~channel()
 {
 	std::cout << "Destrctor" << std::endl;
 }
-
 // {'i'}
 void channel::change_invite_only_mode(std::string& mode) {
-  switch (mode) {
-    case "+i":
-      this->mode.insert('i');
-      break;
-    default:
-      this->mode.erase('i');
-      break;
-  }  
+    if (mode == "+i") {
+        this->mode.insert('i');
+    } else {
+        this->mode.erase('i');
+    }
 }
 
 void channel::change_topic_mode(std::string& mode) {
-  switch (mode) {
-    case "+t":
-      this->mode.insert('t');
-      break;
-    default:
-      this->mode.erase('t');
-      break;
-  }  
+    if (mode == "+t") {
+        this->mode.insert('t');
+    } else {
+        this->mode.erase('t');
+    }
 }
 
 bool channel::change_key_mode(std::vector<std::string>& args, std::string& mode, int fd) {
- switch (mode) {
-   case "+k":
-     if (args.size() < 3) {
+    if (mode == "+k") {
+        if (args.size() < 3) {
+            ft_response(fd, "ERR_NEEDMOREPARAMS");
+            return false;
+        }
+        this->mode.insert('k');
+        this->Key = args[2];
+    } else {
+        this->mode.erase('k');
+        this->Key = "";
+    }
+    return true;
+}
+
+
+bool channel::change_operator_mode(std::map<int, client>& clients, std::vector<std::string>& args, std::string& mode, int fd) 
+ {
+    if (args.size() < 3) {
         ft_response(fd, "ERR_NEEDMOREPARAMS");
         return false;
-     }
-     this->mode.insert('k');
-     this->Key = args[2];
-     break;
-  default:
-    this->mode.erase('k');
-    this->key = "";
- } 
- return true;
+    } 
+
+    std::string username = args[2]; // Le nom de l'utilisateur est le troisième argument
+
+    // Vérifier si l'utilisateur existe
+    client* userClient = NULL;
+    int userFd = -1; // Initialisez userFd à une valeur par défaut
+    for (std::map<int, client>::iterator it = clients.begin(); it != clients.end(); ++it) {
+        if (it->second.get_nickname() == username) {
+            userClient = &(it->second);
+            userFd = it->first; // Stocker la clé de la carte, qui est le descripteur de fichier
+            break;
+        }
+    }
+
+    if (userClient == NULL) {
+        ft_response(fd, "ERR_NOSUCHNICK");
+        return false;
+    }
+
+    // Vérifier si l'utilisateur est membre du canal
+    if (!this->is_member(userFd)) {
+        ft_response(fd, "ERR_USERNOTINCHANNEL");
+        return false;
+    }
+
+    // Modifier les privilèges de l'opérateur en fonction du mode
+    if (mode == "+o")
+        this->Operators.insert(userFd);
+    else
+        this->Operators.erase(userFd);
+    
+    return true;
 }
 
-bool channel::change_operator_mode(std::vector<std::string>& args, std::string& mode, int fd) {
-  if (args.size() < 3) {
-    ft_response(fd, "ERR_NEEDMOREPARAMS");
-    return false;
-  } 
-  // check if the user exist
-  // check if the user is a member
-  switch (mode)
-    case "+o":
-      this->Operators.insert(userFd);
-      break;
-    default:
-      this->Operators.erase(userFd);
-  }
-  return true;
+bool channel::change_limit_mode(std::vector<std::string>& args, std::string& mode, int fd)
+{
+     if (mode == "+l") {
+            if (args.size() < 3) {
+                ft_response(fd, "ERR_NEEDMOREPARAMS");
+                return false;
+            }
+            this->mode.insert(this->mode.end(), 'l');
+            std::stringstream ss(args[2]);
+            ss >> this->_limit;
+        }
+        else {
+            this->mode.erase('l');
+            this->_limit = 0;
+        }
+        return true;
 }
 
-bool channel::change_limit_mode(std::vector<std::string>& args, std::string& mode) {
-  switch (mode) {
-    case "+l":
-        // you can add a check if the number is valid
-       if (args.size() < 3) {
-          ft_response(fd, "ERR_NEEDMOREPARAMS");
-          return false;
-       }
-      this->mode.insert('l');
-      this->_limit = atoi(args[2]);
-      break;
-    default:
-      this->mode.erase('l');
-      this->_limit = 0;
-  } 
-  return true;
-}
+

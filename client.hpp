@@ -74,12 +74,6 @@ class client
         void join_channel(channel* channel);
         void remove_channel(const channel* channelToRemove);
         std::vector<std::string> &get_operators();
-        void set_operators(const std::vector<std::string>& operators);
-        void add_operator(std::string userId);
-        void remove_operator(std::string &mode);
-        void set_mode(char mode, bool active);
-        void add_mode(const std::string& mode);
-        void remove_mode(const std::string& mode);
 
     /**setes*/
         void            set_nickname(const std::string nickn);

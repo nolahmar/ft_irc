@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <vector>
 #include <cstring>
+#include <set>
 
 class channel
 {
@@ -20,7 +21,7 @@ class channel
         std::vector<int>  Users;
         std::string Key;
         std::string Topic;
-        std::vector<int> Operators; // Vecteur pour stocker les identifiants des opérateurs de canal
+        std::set<int> Operators; // Vecteur pour stocker les identifiants des opérateurs de canal
         std::set<char> mode;
         int _limit; // Variable pour stocker la limite du nombre d'utilisateurs
     public:
@@ -42,7 +43,6 @@ class channel
         void set_Owner(const int owner);
         void set_Users(const std::vector<int> users);
         void set_limit(int limit);
-        void add_operator(int userId);
         void addUser(int userId);
         void remove_user(int userId);
         void broadcast(const std::string& message, std::map<int, client>& clients, int curr_client_fd);
@@ -56,9 +56,11 @@ class channel
         ~channel();
         void change_invite_only_mode(std::string& mode);
         void change_topic_mode(std::string& mode);
-        void change_key_mode(std::vector<std::string>& args, std::string& mode);
-        void change_operator_mode(std::vector<std::string>& args, std::string& mode, int fd);
-        void change_limit_mode(std::vector<std::string>& args, std::string& mode);
+        bool change_key_mode(std::vector<std::string>& args, std::string& mode, int fd);
+        bool change_operator_mode(std::map<int, client>& clients, std::vector<std::string>& args, std::string& mode, int fd);
+        bool change_limit_mode(std::vector<std::string>& args, std::string& mode, int fd);
 };
+
+void ft_response(int fd, const char* message);
 
 #endif
