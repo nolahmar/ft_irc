@@ -997,6 +997,10 @@ void command::invite(int fd, const std::vector<std::string>& args, std::map<int,
 		ft_response(fd, "ERR_USERONCHANNEL");
 		return;
 	}
+	 if ((*chanIt)->get_mode().count('i') != 0 && !(*chanIt)->is_operator(fd)) {
+        ft_response(fd, "ERR_CHANOPRIVSNEEDED");
+        return;
+    }
     // Inviter le client au canal
     sender.invite_to_channel(fd, invitedClientIt, *chanIt);
 }

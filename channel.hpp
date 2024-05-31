@@ -33,6 +33,7 @@ class channel
         std::string get_name() const;
         std::string get_key() const;
         std::string get_Topic() const;
+        const std::set<char>& get_mode() const;
         std::vector<int>  &getadmin();
         int getOwner() const;
         std::vector<int> &get_Users();

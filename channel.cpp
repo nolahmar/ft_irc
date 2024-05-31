@@ -123,6 +123,10 @@ int channel::getOwner() const
 	return  Owner;
 }
 
+ const std::set<char>& channel::get_mode() const {
+        return mode;
+}
+
 std::vector<int> &channel::get_Users()
 {
 	return Users;
@@ -264,7 +268,7 @@ bool channel::change_limit_mode(std::vector<std::string>& args, std::string& mod
                 ft_response(fd, "ERR_NEEDMOREPARAMS");
                 return false;
             }
-            this->mode.insert(this->mode.end(), 'l');
+            this->mode.insert('l');
             std::stringstream ss(args[2]);
             ss >> this->_limit;
         }

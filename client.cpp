@@ -48,7 +48,7 @@ void client::sendMessage(const std::string& message) {
 
 void client::invite_to_channel(int fd, std::map<int, client>::iterator& invitedClient, channel* channel) {
     int target = invitedClient->first;
-    //check mode !!!!! on utilison std::vector<std::string>Operators
+    //check mode !!!!! 
     // Envoyer un message d'invitation à l'utilisateur invité !!! Merciiii
     write(target, "INVITE " + get_nickname() + " " + channel->get_name());
     // Join target to the target channel
