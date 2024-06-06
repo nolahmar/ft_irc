@@ -68,7 +68,7 @@ void command::excute(const std::string& command,const std::vector<std::string>& 
                 ft_join(parameters,clients,fd,channels);
             } else 
 			{
-				ft_response(fd,"ERR_NEEDMOREPARAMS"); 
+				ft_response(fd, std::string(ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "JOIN")).c_str());
             }
         } 
 		else if (command == "KICK")
@@ -80,7 +80,7 @@ void command::excute(const std::string& command,const std::vector<std::string>& 
 				ft_kick(parameters, clients,fd,channels);
             } else 
 			{
-				ft_response(fd,"ERR_NEEDMOREPARAMS"); 
+				ft_response(fd, std::string(ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "KICK")).c_str());
             }
         } else if (command == "Quite")
 		 {
@@ -97,7 +97,7 @@ void command::excute(const std::string& command,const std::vector<std::string>& 
 
             } else {
 
-				ft_response(fd,"ERR_NEEDMOREPARAMS");      
+				ft_response(fd, std::string(ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "USER")).c_str());      
 		 }
         }else if(command == "pass")
 		{
@@ -108,7 +108,7 @@ void command::excute(const std::string& command,const std::vector<std::string>& 
 
 			}else
 			{
-				ft_response(fd,"ERR_NEEDMOREPARAMS");
+				ft_response(fd, std::string(ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "PASS")).c_str());
 			}
 		}else if(command == "Nick")
 		{
@@ -117,7 +117,7 @@ void command::excute(const std::string& command,const std::vector<std::string>& 
 				ft_nick(parameters,clients,fd);
 			}else
 			{
-				ft_response(fd,"ERR_NEEDMOREPARAMS");
+				ft_response(fd, std::string(ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "NICK")).c_str());
 			}
 		}else if(command == "Topic")
 		{
@@ -177,13 +177,13 @@ void command::ft_user(std::vector<std::string> parametres ,std::map< int ,client
 	{
 		if(it->first == fd && it->second.is_registered() == "registed")
 		{
-			ft_response(fd,"ERR_ALREADYREGISTERED");
+			ft_response(fd, std::string(ERR_ALREADYREGISTERED(clients[fd].get_nickname())).c_str());
 			return;
 		}
 		else if (it->second.get_username() == parametres[0] && it->first != fd) 
 		{ 
 			// deja most3mal => is already used"
-			ft_response(fd,"ERR_ALREADYREGISTERED");
+			ft_response(fd, std::string(ERR_ALREADYREGISTERED(clients[fd].get_nickname())).c_str());
 			
 			return;        	
 		}
@@ -228,11 +228,12 @@ int  isValidNickname(const std::string& nickname)
 
 void command::ft_nick(std::vector<std::string> parametres ,std::map< int ,client> &clients ,int fd)
 {
+	client& sender = clients[fd];
 
 	if (parametres.empty())  
 	{
 		//std::cerr << "Error : No nickname provided ." << std::endl;
-		ft_response(fd,"ERR_NONICKNAMEGIVEN");
+		ft_response(fd, std::string(ERR_NONICKNAMEGIVEN(sender.get_nickname())).c_str());
 		return;
 	}
 
@@ -242,7 +243,7 @@ void command::ft_nick(std::vector<std::string> parametres ,std::map< int ,client
 		if(it->second.get_nickname() == parametres[0] && it->first != fd)
 		{
 			//std::cout << "nickname '" << parametres[0] << "' is already nickname " << std::endl;
-			ft_response(fd,"ERR_NICKNAMEINUSE");   //this nickname deja use (mestkhdm)
+			 ft_response(fd, std::string(ERR_NICKNAMEINUSE(sender.get_nickname())).c_str());   //this nickname deja use (mestkhdm)
             	return; 
 		}
 	}
@@ -251,7 +252,7 @@ void command::ft_nick(std::vector<std::string> parametres ,std::map< int ,client
 	if(!isValidNickname(parametres[0]))
 	{
 			//std::cout << "nickname '" << parametres[0] << "' is invalid " << std::endl;
-			ft_response(fd,"ERR_ERRONEUSNICKNAME");
+			ft_response(fd, std::string(ERR_ERRONEUSNICKNAME(sender.get_nickname(), parametres[0])).c_str());
 			return;
 	}
 
@@ -291,15 +292,16 @@ void ft_msg(channel* channelOfUsers, const std::string& msg)
 
 void command::ft_pass(std::vector<std::string> parametres ,std::map< int ,client> &clients ,int fd ,std::string pass)
 {
+	 client& sender = clients[fd];
 	if (parametres.empty()) // dakhl pass mais medkhl hta parameter werha 
 	{
-		ft_response(fd,"ERR_NEEDMOREPARAMS");
+		ft_response(fd, std::string(ERR_NEEDMOREPARAMS(sender.get_nickname(), "PASS")).c_str());
 		return;
 	}
 
 	if(clients[fd].is_registered() == "pass") // register ou 3awd dar cmd pass
 	{	
-		ft_response(fd,"ERR_ALREADYREGISTERED");
+		ft_response(fd, std::string(ERR_ALREADYREGISTERED(sender.get_nickname())).c_str());
         return;
 	}
 
@@ -315,9 +317,10 @@ void command::ft_pass(std::vector<std::string> parametres ,std::map< int ,client
 
 void command::ft_topic(std::vector<std::string> parametres , std::map<int ,client> &clients ,int fd)
 {
+	client& sender = clients[fd];
 	if (parametres.empty())
 	{
-		ft_response(fd,"ERR_NEEDMOREPARAMS"); 
+		ft_response(fd, std::string(ERR_NEEDMOREPARAMS(sender.get_nickname(), "TOPIC")).c_str()); 
 			return;
 	}
 
@@ -362,8 +365,8 @@ void command::ft_topic(std::vector<std::string> parametres , std::map<int ,clien
 			else if(parametres.size() > 1)  // member fiha but its not admins
 			{
 
-				//std::cout << "You Dont have permission to change the Topic: " << std::endl;
-				ft_response(fd,"ERR_CHANOPRIVSNEEDED"); 
+				//std::cout << "You Dont have permission to change the Topic: " << std::endl; 
+				ft_response(fd, std::string(ERR_CHANOPRIVSNEEDED(sender.get_nickname(), channelName)).c_str());
 				return;
 			}
 		}
@@ -372,7 +375,7 @@ void command::ft_topic(std::vector<std::string> parametres , std::map<int ,clien
 	// is not joined to the channel
 	if(!joinedChannel)
 	{
-		ft_response(fd,"ERR_NOTONCHANNEL");
+		ft_response(fd, std::string(ERR_NOTONCHANNEL(sender.get_nickname(), channelName)).c_str());
     		return;
 	}
 }
@@ -404,10 +407,11 @@ int searchUserInsideChannel(int fd, channel channelS)
 
 void command::ft_join(std::vector<std::string> parametres , std::map<int ,client> &clients ,int fd ,std::vector<channel *> &channels)
 {
+	client& sender = clients[fd];
 
 	if (parametres.empty()) // join apres medkhl walo
 	{
-		ft_response(fd, "ERR_NEEDMOREPARAMS");
+		ft_response(fd, std::string(ERR_NEEDMOREPARAMS(sender.get_nickname(), "JOIN")).c_str());
 		return;
 	}
 		std::istringstream iss2;
@@ -429,7 +433,8 @@ void command::ft_join(std::vector<std::string> parametres , std::map<int ,client
 			if ((*it)->get_name()== buffer && searchUserInsideChannel(fd,**it))
 			{
 				 //std::cout<< "channel  ==>" << searchUserInsideChannel(fd,**it) << "&& fd ==>" << fd <<std::endl;
-				ft_response(fd, "ERR_INVITEONLYCHAN"); // 1 2 3 user  deja kan
+				// ft_response(fd, "ERR_INVITEONLYCHAN"); // 1 2 3 user  deja kan !!!!!
+				ft_response(fd, std::string(ERR_INVITEONLYCHAN(clients[fd].get_nickname(), buffer)).c_str());
 				break;
 			}
 			else if((*it)->get_name()== buffer) 
@@ -472,7 +477,7 @@ void command::ft_join(std::vector<std::string> parametres , std::map<int ,client
 				}
 				else{
 
-					ft_response(fd, "ERR_BADCHANNELKEY");  // key ghlat
+					ft_response(fd, std::string(ERR_BADCHANNELKEY(clients[fd].get_nickname(), (*it)->get_name())).c_str()); // key ghlat
 					break;
 				}
 				}
@@ -519,7 +524,7 @@ void command::ft_kick(std::vector<std::string> parametres , std::map<int ,client
 
 	if(parametres.size() < 2)
 	{
-		ft_response(fd, "ERR_NEEDMOREPARAMS");
+		ft_response(fd, std::string(ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "KICK")).c_str());
 		return;
 	}
 	std::istringstream iss1;
@@ -542,7 +547,7 @@ void command::ft_kick(std::vector<std::string> parametres , std::map<int ,client
 	int owner = 0;
 	if(i == channels.size()) // i wslt end makch channel
 	{
-		ft_response(fd, "ERR_NOSUCHCHANNEL"); // channls not found
+		ft_response(fd, std::string(ERR_NOSUCHCHANNEL(clients[fd].get_nickname(), channel_name)).c_str()); // channls not found
 		return ;
 	}
 
@@ -553,12 +558,12 @@ void command::ft_kick(std::vector<std::string> parametres , std::map<int ,client
 	int check = searchUserInsideChannel(fd, *channelOfUsers);
 	if(check == 0)
 	{
-		ft_response(fd, "ERR_NOTONCHANNEL"); // mejon channll
+		ft_response(fd, std::string(ERR_NOTONCHANNEL(clients[fd].get_nickname(), channel_name)).c_str()); // mejon channll
 		return ;
 	}
 	else if(check == 1)
 	{
-		ft_response(fd, "ERR_CHANOPRIVSNEEDED"); // user fik channle membre
+		ft_response(fd, std::string(ERR_CHANOPRIVSNEEDED(clients[fd].get_nickname(), channel_name)).c_str()); // user fik channle membre
 		return ;
 	}
 	else if(check ==3){
@@ -604,13 +609,12 @@ void command::ft_kick(std::vector<std::string> parametres , std::map<int ,client
 					}
 
 		else if(found != -1 && searchResult) { 
-			ft_response(fd, "ERR_CHANOPRIVSNEEDED" ); // admin bagha ikhrji owner
+			ft_response(fd, std::string(ERR_CHANOPRIVSNEEDED(clients[fd].get_nickname(), channel_name)).c_str()); // admin bagha ikhrji owner
 			return;
 		}
 		else {
-				ft_response(fd, "ERR_USERNOTINCHANNEL" ); // user maknch fi channel
-
-			return;
+			ft_response(fd, std::string(ERR_USERNOTINCHANNEL(clients[fd].get_nickname(), buffer, channel_name)).c_str()); // user maknch fi channel
+				return;
 		}
 	}
 }
@@ -713,10 +717,6 @@ void command::ft_Quit(std::vector<std::string> parameters, std::map<int, client>
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void sendErrorMessage(int fd, const std::string& errorMessage) {
-    std::cout << "Sending error message to client with fd " << fd << ": " << errorMessage << std::endl;
-}
-
 int ft_ckeak(std::string &nick, std::map<int, client>& clients)
 {
 	for(std::map<int, client>::iterator it = clients.begin(); it != clients.end(); it++)
@@ -730,21 +730,12 @@ int ft_ckeak(std::string &nick, std::map<int, client>& clients)
 	return 0;
 }
 
-int get_client_id_by_nickname(const std::string &nick, const std::map<int, client>& clients) {
-    for (std::map<int, client>::const_iterator it = clients.begin(); it != clients.end(); ++it) {
-        if (it->second.get_nickname() == nick) {
-            return it->first;
-        }
-    }
-    return -1; // Retourner -1 si le pseudonyme n'est pas trouvé
-}
-
 //santaxe ---> PRIVMSG noni :hello
 void command::ft_privmsg(std::vector<std::string> args, std::map<int, client>& clients, int fd)
 {
     if (args.size() < 2 || args[0].empty() || args[1].empty() || args[1].at(0) != ':')
     {
-        ft_response(fd, "ERR_NEEDMOREPARAMS");
+        ft_response(fd, std::string(ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "PRIVMSG")).c_str());
         return;
     }
 
@@ -772,14 +763,14 @@ void command::ft_privmsg(std::vector<std::string> args, std::map<int, client>& c
         // Canal non trouvé
         if (!chan)
         {
-            ft_response(fd, "ERR_NOSUCHCHANNEL");
+             ft_response(fd, std::string(ERR_NOSUCHCHANNEL(clients[fd].get_nickname(), target)).c_str());
             return;
         }
 		// std::cout << "\nClient ID: " << clients[fd].get_id() << std::endl;
 		// Vérifier si le client est dans le canal
 		if (!chan->is_member(fd))
 		{
-			ft_response(fd, "ERR_CANNOTSENDTOCHAN");
+			ft_response(fd, std::string(ERR_CANNOTSENDTOCHAN(clients[fd].get_nickname(), target)).c_str());
 			return;
 		}
 
@@ -801,7 +792,7 @@ void command::ft_privmsg(std::vector<std::string> args, std::map<int, client>& c
 
     if (destClient == NULL)
     {
-        ft_response(fd, "ERR_NOSUCHNICK");
+        ft_response(fd, std::string(ERR_NOSUCHNICK(clients[fd].get_nickname(), target)).c_str());
         return;
     }
 
@@ -816,7 +807,7 @@ void command::ft_notice(std::vector<std::string> args, std::map<int, client>& cl
 {
    if (args.size() < 2 || args[0].empty() || args[1].empty() || args[1].at(0) != ':')
     {
-        ft_response(fd, "ERR_NEEDMOREPARAMS");
+      ft_response(fd, std::string(ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "PRIVMSG")).c_str());
         return;
     }
 
@@ -844,14 +835,14 @@ void command::ft_notice(std::vector<std::string> args, std::map<int, client>& cl
         // Canal non trouvé
         if (!chan)
         {
-            ft_response(fd, "ERR_NOSUCHCHANNEL");
+            ft_response(fd, std::string(ERR_NOSUCHCHANNEL(clients[fd].get_nickname(), target)).c_str());
             return;
         }
 
 		// Vérifier si le client est dans le canal
 		if (!chan->is_member(fd))
 		{
-			ft_response(fd, "ERR_CANNOTSENDTOCHAN");
+			ft_response(fd, std::string(ERR_CANNOTSENDTOCHAN(clients[fd].get_nickname(), target)).c_str());
 			return;
 		}
 
@@ -873,7 +864,7 @@ void command::ft_notice(std::vector<std::string> args, std::map<int, client>& cl
 
     if (destClient == NULL)
     {
-        ft_response(fd, "ERR_NOSUCHNICK");
+        ft_response(fd, std::string(ERR_NOSUCHNICK(clients[fd].get_nickname(), target)).c_str());
         return;
     }
 
@@ -904,7 +895,7 @@ void command::ft_part(std::vector<std::string> args, std::map<int, client>& clie
 {
     if (args.empty()) 
     {
-        ft_response(fd, "ERR_NEEDMOREPARAMS");
+        ft_response(fd, std::string(ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "PART")).c_str());
         return;
     }
 	std::vector<std::string> targetChannels = split(args[0]);
@@ -947,7 +938,7 @@ void command::invite(int fd, const std::vector<std::string>& args, std::map<int,
     client& sender = clients[fd];
 
     if (args.size() < 2) {
-        ft_response(fd, "ERR_NEEDMOREPARAMS");
+		ft_response(fd, std::string(ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "INVITE")).c_str());
         return;
     }
 
@@ -966,7 +957,7 @@ void command::invite(int fd, const std::vector<std::string>& args, std::map<int,
 
 	// Check if no target user
     if (invitedClientIt == clients.end()) {
-        ft_response(fd, "ERR_NOSUCHNICK");
+        ft_response(fd, std::string(ERR_NOSUCHNICK(sender.get_nickname(), invitedNickname)).c_str());
         return;
     }
 
@@ -982,23 +973,23 @@ void command::invite(int fd, const std::vector<std::string>& args, std::map<int,
 
 	// Check if no target channel
     if (chanIt == channels.end()) {
-        ft_response(fd, "ERR_NOSUCHCHANNEL");
+        ft_response(fd, std::string(ERR_NOSUCHCHANNEL(sender.get_nickname(), channelName)).c_str());
         return;
     }
 
 	// Check if the sender is a member of the target channel
 	if (!(*chanIt)->is_member(fd)) {
-		ft_response(fd, "ERR_NOTONCHANNEL");
+		ft_response(fd, std::string(ERR_NOTONCHANNEL(sender.get_nickname(), channelName)).c_str());
 		return;
 	}
 
 	// Check if the target user is not already a member of the target channel
 	if ((*chanIt)->is_member(invitedClientIt->first)) {
-		ft_response(fd, "ERR_USERONCHANNEL");
+		ft_response(fd, std::string(ERR_USERONCHANNEL(sender.get_nickname(), channelName)).c_str());
 		return;
 	}
 	 if ((*chanIt)->get_mode().count('i') != 0 && !(*chanIt)->is_operator(fd)) {
-        ft_response(fd, "ERR_CHANOPRIVSNEEDED");
+        ft_response(fd, std::string(ERR_CHANOPRIVSNEEDED(sender.get_nickname(), channelName)).c_str());
         return;
     }
     // Inviter le client au canal
@@ -1009,7 +1000,7 @@ void command::ping(std::vector<std::string> args, std::map<int, client>& clients
 {
     if (args.empty())
     {
-        ft_response(fd, "ERR_NEEDMOREPARAMS");
+        ft_response(fd, std::string(ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "PING")).c_str());
         return;
     }
 
@@ -1018,7 +1009,7 @@ void command::ping(std::vector<std::string> args, std::map<int, client>& clients
     // Verify the client exists in the clients map
     if (clients.find(fd) == clients.end())
     {
-        ft_response(fd, "ERR_NOSUCHNICK");
+        ft_response(fd, std::string(ERR_NOSUCHNICK(clients[fd].get_nickname(), target)).c_str());
         return;
     }
 
@@ -1041,8 +1032,9 @@ void command::pong(std::map<int, client>& clients, int fd)
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void command::mode(std::map<int, client>& clients, std::vector<std::string> args, std::vector<channel*>& channels, int fd) {
     // Handling errors
+	client& sender = clients[fd];
     if (args.size() < 2) {
-        ft_response(fd, "ERR_NEEDMOREPARAMS");
+        ft_response(fd, std::string(ERR_NEEDMOREPARAMS(sender.get_nickname(), "MODE")).c_str());
         return;
     }
 
@@ -1058,13 +1050,13 @@ void command::mode(std::map<int, client>& clients, std::vector<std::string> args
     }
 
     if (!chan) {
-        ft_response(fd, "ERR_NOSUCHCHANNEL");
+        ft_response(fd, std::string(ERR_NOSUCHCHANNEL(sender.get_nickname(), target)).c_str());
         return;
     }
 
     // user is not an operator
     if (!chan->is_operator(fd)) {
-        ft_response(fd, "ERR_CHANOPRIVSNEEDED");
+        ft_response(fd, std::string(ERR_CHANOPRIVSNEEDED(sender.get_nickname(), target)).c_str());
         return;
     }
 
@@ -1073,29 +1065,33 @@ void command::mode(std::map<int, client>& clients, std::vector<std::string> args
 
     if (modeStr == "+i" || modeStr == "-i") {
         chan->change_invite_only_mode(modeStr);
-    } else if (modeStr == "+t" || modeStr == "-t") {
+    }
+	else if (modeStr == "+t" || modeStr == "-t") {
         chan->change_topic_mode(modeStr);
-    } else if (modeStr == "+k" || modeStr == "-k") {
+    }
+	else if (modeStr == "+k" || modeStr == "-k") {
         if (args.size() < 3 && modeStr == "+k") {
-            ft_response(fd, "ERR_NEEDMOREPARAMS");
+            ft_response(fd, std::string(ERR_NEEDMOREPARAMS(sender.get_nickname(), "MODE")).c_str());
             return;
         }
         chan->change_key_mode(args, modeStr, fd);
-    } else if (modeStr == "+o" || modeStr == "-o") {
+    }
+	else if (modeStr == "+o" || modeStr == "-o") {
         if (args.size() < 3) {
-            ft_response(fd, "ERR_NEEDMOREPARAMS");
+            ft_response(fd, std::string(ERR_NEEDMOREPARAMS(sender.get_nickname(), "MODE")).c_str());
             return;
         }
         chan->change_operator_mode(clients, args, modeStr, fd);
-    } else if (modeStr == "+l" || modeStr == "-l") {
+    }
+	else if (modeStr == "+l" || modeStr == "-l") {
         if (args.size() < 3 && modeStr == "+l") {
-            ft_response(fd, "ERR_NEEDMOREPARAMS");
+            ft_response(fd, std::string(ERR_NEEDMOREPARAMS(sender.get_nickname(), "MODE")).c_str());
             return;
         }
         chan->change_limit_mode(args, modeStr, fd);
-    } else {
-        ft_response(fd, "ERR_UNKNOWNMODE");
     }
+	else 
+        ft_response(fd, std::string(ERR_UNKNOWNMODE(sender.get_nickname(), modeStr)).c_str());
 }
 
 command::~command()

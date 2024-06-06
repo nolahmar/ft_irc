@@ -30,7 +30,13 @@
 #define RPL_PONG(prefix, token) ":" + prefix + " PONG :" + token
 #define ERR_USERONCHANNEL(source, channel) "443 " + source + " " + channel + " :is already on channel"
 #define RPL_INVITING(user, channel) "341 " + user + " " + channel + " :Inviting"
-
+#define ERR_ALREADYREGISTERED(source)                   "462 " + source + " :You may not register"
+#define ERR_NONICKNAMEGIVEN(source)                     "431 " + source + " :Nickname not given"
+#define ERR_NICKNAMEINUSE(source)                       "433 " + source + " " + source  + " :Nickname is already in use"
+#define ERR_ERRONEUSNICKNAME(client, nick) "432 " + client + " " + nick + " :Erroneous nickname"
+#define ERR_INVITEONLYCHAN(client, channel) "473 " + client + " " + channel + " :Cannot join channel (+i)"
+#define ERR_BADCHANNELKEY(source, channel)              "475 " + source + " " + channel + " :Cannot join channel (+k)"
+#define ERR_USERNOTINCHANNEL(source, nickname, channel) "441 " + source + " " + nickname + " " + channel + " :They aren't on that channel"
 
 class channel;
 class client
@@ -66,12 +72,9 @@ class client
         std::string is_registered();
         std::string get_password() const;
         void sendMessage(const std::string& message);
-        void quiter();
         void invite_to_channel(int fd, std::map<int, client>::iterator& invitedClient, channel* channel);
         std::string get_prefix() const;
         void write(int fd, const std::string& message) const;
-        void quit_network(std::map<int, client>& clients, int fd, const std::string& reason) const;
-        void join_channel(channel* channel);
         void remove_channel(const channel* channelToRemove);
         std::vector<std::string> &get_operators();
 
