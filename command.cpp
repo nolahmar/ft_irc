@@ -48,19 +48,19 @@ void ft_response(int fd, const char* message)
 void command::excute(const std::string& command,const std::vector<std::string>& parameters,std::map< int ,client> &clients, int fd, std::string password,std::vector<channel *> &channels)
 {
 
-		if (clients[fd].is_registered() == "none" && command != "pass")
+		if (clients[fd].is_registered() == "none" && command != "/pass")
 		{
 			ft_response(fd, "You should enter the passwotrd");
 				return ;
 		}
 
-		if(clients[fd].is_registered() != "registed"  && command != "user" && command != "pass")
+		if(clients[fd].is_registered() != "registed"  && command != "/user" && command != "/pass")
 		{	
 			ft_response(fd, "YOu are not registred yet");
 			return ;
 		}
 
-        if (command == "join") 
+        if (command == "/join") 
 		{
             // JOIN command: Join a channel
             if (parameters.size() >= 1) 
@@ -71,7 +71,7 @@ void command::excute(const std::string& command,const std::vector<std::string>& 
 				ft_response(fd, std::string(ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "JOIN")).c_str());
             }
         } 
-		else if (command == "KICK")
+		else if (command == "/KICK")
 		 {
             // KICK command: Kick a user from a channel
             if (parameters.size() >= 2) 
@@ -82,13 +82,13 @@ void command::excute(const std::string& command,const std::vector<std::string>& 
 			{
 				ft_response(fd, std::string(ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "KICK")).c_str());
             }
-        } else if (command == "Quite")
+        } else if (command == "/Quite")
 		 {
             // Quite command: Quite a user to a channel
             
                ft_Quit(parameters,clients,fd, channels);
            
-        } else if (command == "user")
+        } else if (command == "/user")
 		 {
             // MODE command: Change the mode of a channel
             if (parameters.size() >= 4) 
@@ -99,7 +99,7 @@ void command::excute(const std::string& command,const std::vector<std::string>& 
 
 				ft_response(fd, std::string(ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "USER")).c_str());      
 		 }
-        }else if(command == "pass")
+        }else if(command == "/pass")
 		{
 			if(parameters.size() >=1)
 			{
@@ -110,7 +110,7 @@ void command::excute(const std::string& command,const std::vector<std::string>& 
 			{
 				ft_response(fd, std::string(ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "PASS")).c_str());
 			}
-		}else if(command == "Nick")
+		}else if(command == "/Nick")
 		{
 			if(parameters.size() >= 1)
 			{
@@ -119,37 +119,37 @@ void command::excute(const std::string& command,const std::vector<std::string>& 
 			{
 				ft_response(fd, std::string(ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "NICK")).c_str());
 			}
-		}else if(command == "Topic")
+		}else if(command == "/Topic")
 		{
 			
 			ft_topic(parameters,clients,fd);
 
 		}
-		else if (command == "PRIVMSG")
+		else if (command == "/PRIVMSG")
 	{
         ft_privmsg(parameters, clients, fd);
     }
-	else if (command == "NOTICE")
+	else if (command == "/NOTICE")
 	{
         ft_notice(parameters, clients, fd);
     }
-	else if (command == "PART")
+	else if (command == "/PART")
 	{
         ft_part(parameters, clients, fd);
     }
-	else if (command == "INVITE")
+	else if (command == "/INVITE")
 	{
         invite(fd, parameters, clients, channels);
     }
-	else if (command == "MODE")
+	else if (command == "/MODE")
 	{
         mode(clients, parameters, channels, fd);
     }
-	else if (command == "PING")
+	else if (command == "/PING")
 	{
 		ping(parameters, clients, fd);
 	}
-	else if (command == "PONG")
+	else if (command == "/PONG")
 	{
 		pong(clients, fd);
 	}
@@ -299,7 +299,7 @@ void command::ft_pass(std::vector<std::string> parametres ,std::map< int ,client
 		return;
 	}
 
-	if(clients[fd].is_registered() == "pass") // register ou 3awd dar cmd pass
+	if(clients[fd].is_registered() == "/pass") // register ou 3awd dar cmd pass
 	{	
 		ft_response(fd, std::string(ERR_ALREADYREGISTERED(sender.get_nickname())).c_str());
         return;
@@ -1055,7 +1055,7 @@ void command::mode(std::map<int, client>& clients, std::vector<std::string> args
     }
 
     // user is not an operator
-    if (!chan->is_operator(fd)) {
+    if (!chan->is_operator(fd) && !chan->is_admin(fd)) {
         ft_response(fd, std::string(ERR_CHANOPRIVSNEEDED(sender.get_nickname(), target)).c_str());
         return;
     }
@@ -1065,9 +1065,11 @@ void command::mode(std::map<int, client>& clients, std::vector<std::string> args
 
     if (modeStr == "+i" || modeStr == "-i") {
         chan->change_invite_only_mode(modeStr);
+		chan->broadcast(RPL_MODE(sender.get_nickname(), chan->get_name(), modeStr, ""), clients, fd);
     }
 	else if (modeStr == "+t" || modeStr == "-t") {
         chan->change_topic_mode(modeStr);
+		chan->broadcast(RPL_MODE(sender.get_nickname(), chan->get_name(), modeStr, ""), clients, fd);
     }
 	else if (modeStr == "+k" || modeStr == "-k") {
         if (args.size() < 3 && modeStr == "+k") {
@@ -1075,6 +1077,7 @@ void command::mode(std::map<int, client>& clients, std::vector<std::string> args
             return;
         }
         chan->change_key_mode(args, modeStr, fd);
+		chan->broadcast(RPL_MODE(sender.get_nickname(), chan->get_name(), modeStr, ""), clients, fd);
     }
 	else if (modeStr == "+o" || modeStr == "-o") {
         if (args.size() < 3) {
@@ -1082,6 +1085,7 @@ void command::mode(std::map<int, client>& clients, std::vector<std::string> args
             return;
         }
         chan->change_operator_mode(clients, args, modeStr, fd);
+		chan->broadcast(RPL_MODE(sender.get_nickname(), chan->get_name(), modeStr, ""), clients, fd);
     }
 	else if (modeStr == "+l" || modeStr == "-l") {
         if (args.size() < 3 && modeStr == "+l") {
@@ -1089,6 +1093,7 @@ void command::mode(std::map<int, client>& clients, std::vector<std::string> args
             return;
         }
         chan->change_limit_mode(args, modeStr, fd);
+		chan->broadcast(RPL_MODE(sender.get_nickname(), chan->get_name(), modeStr, ""), clients, fd);
     }
 	else 
         ft_response(fd, std::string(ERR_UNKNOWNMODE(sender.get_nickname(), modeStr)).c_str());
