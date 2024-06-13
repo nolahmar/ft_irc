@@ -7,60 +7,31 @@
 #include <string>
 #include <vector>
 
-
-
-//Sure, let's break down the ft_response function in detail, explaining each part of the code. 
-//This function is used to send a formatted response message to a client over a network socket,
-//typically in an IRC (Internet Relay Chat) context
-
 void ft_response(int fd, const char* message)
 {   
-	std::cout << "message: " << message;
     // Example of sending an IRC response back to the client
     char response[512]; // Assuming maximum response length is 512 characters
     snprintf(response, sizeof(response), ":%s %s\r\n", "SERVER", message);
     send(fd, response, strlen(response), 0);
 }
 
-// std::string	command::welcomemsg(void)
-// {
-// 	std::string welcome = RED;
-// 	welcome.append("██╗    ██╗███████╗██╗      ██████╗ ██████╗ ███╗   ███╗███████╗\n");
-// 	welcome.append("██║    ██║██╔════╝██║     ██╔════╝██╔═══██╗████╗ ████║██╔════╝\n");
-// 	welcome.append("██║ █╗ ██║█████╗  ██║     ██║     ██║   ██║██╔████╔██║█████╗\n");
-// 	welcome.append("██║███╗██║██╔══╝  ██║     ██║     ██║   ██║██║╚██╔╝██║██╔══╝\n");
-// 	welcome.append("╚███╔███╔╝███████╗███████╗╚██████╗╚██████╔╝██║ ╚═╝ ██║███████╗\n");
-// 	welcome.append(" ╚══╝╚══╝ ╚══════╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝\n");
-// 	welcome.append(BLUE);
-// 	welcome.append("You need to login so you can start chatting OR you can send HELP to see how :) \n");
-// 	welcome.append(RESET);
-// 	return (welcome);
-// };
-
-
-
-
-
-// hana 3la ha std::cout << GREEN <<  "data: ======>> "  << BD << std::string(buffer, bytesReceived) << std::endl;sb kola function achnow kadkhl
-// fi prameter dilha
-//std::vector<channel *> &channels  std::map< int ,client> &clients ==> * baash tbe9aa by refrence ila tbedelaat chnnel katbedel ta end client hiit inside client kin channels
-
 void command::excute(const std::string& command,const std::vector<std::string>& parameters,std::map< int ,client> &clients, int fd, std::string password,std::vector<channel *> &channels)
 {
 
-		if (clients[fd].is_registered() == "none" && command != "/pass")
+		if (clients[fd].is_registered() == "none" && command != "PASS") // ?
 		{
 			ft_response(fd, "You should enter the passwotrd");
 				return ;
 		}
 
-		if(clients[fd].is_registered() != "registed"  && command != "/user" && command != "/pass")
+		if(clients[fd].is_registered() != "registed"  && command != "USER" && command != "PASS" && command != "NICK")
 		{	
+			std::cout << "command ==>" << command << std::endl;
 			ft_response(fd, "YOu are not registred yet");
 			return ;
 		}
 
-        if (command == "/join") 
+        if (command == "JOIN") 
 		{
             // JOIN command: Join a channel
             if (parameters.size() >= 1) 
@@ -71,7 +42,7 @@ void command::excute(const std::string& command,const std::vector<std::string>& 
 				ft_response(fd, std::string(ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "JOIN")).c_str());
             }
         } 
-		else if (command == "/KICK")
+		else if (command == "KICK")
 		 {
             // KICK command: Kick a user from a channel
             if (parameters.size() >= 2) 
@@ -82,13 +53,13 @@ void command::excute(const std::string& command,const std::vector<std::string>& 
 			{
 				ft_response(fd, std::string(ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "KICK")).c_str());
             }
-        } else if (command == "/Quite")
+        } else if (command == "QUIT")
 		 {
             // Quite command: Quite a user to a channel
             
                ft_Quit(parameters,clients,fd, channels);
            
-        } else if (command == "/user")
+        } else if (command == "USER")
 		 {
             // MODE command: Change the mode of a channel
             if (parameters.size() >= 4) 
@@ -99,7 +70,7 @@ void command::excute(const std::string& command,const std::vector<std::string>& 
 
 				ft_response(fd, std::string(ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "USER")).c_str());      
 		 }
-        }else if(command == "/pass")
+        }else if(command == "PASS")
 		{
 			if(parameters.size() >=1)
 			{
@@ -110,7 +81,8 @@ void command::excute(const std::string& command,const std::vector<std::string>& 
 			{
 				ft_response(fd, std::string(ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "PASS")).c_str());
 			}
-		}else if(command == "/Nick")
+
+		}else if(command == "NICK")
 		{
 			if(parameters.size() >= 1)
 			{
@@ -119,45 +91,60 @@ void command::excute(const std::string& command,const std::vector<std::string>& 
 			{
 				ft_response(fd, std::string(ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "NICK")).c_str());
 			}
-		}else if(command == "/Topic")
+		}else if(command == "TOPIC")
 		{
 			
 			ft_topic(parameters,clients,fd);
 
 		}
-		else if (command == "/PRIVMSG")
+		else if (command == "PRIVMSG")
 	{
         ft_privmsg(parameters, clients, fd);
     }
-	else if (command == "/NOTICE")
+	else if (command == "NOTICE")
 	{
         ft_notice(parameters, clients, fd);
     }
-	else if (command == "/PART")
+	else if (command == "PART")
 	{
         ft_part(parameters, clients, fd);
     }
-	else if (command == "/INVITE")
+	else if (command == "INVITE")
 	{
         invite(fd, parameters, clients, channels);
     }
-	else if (command == "/MODE")
+	else if (command == "MODE")
 	{
         mode(clients, parameters, channels, fd);
     }
-	else if (command == "/PING")
+	else if (command == "PING")
 	{
 		ping(parameters, clients, fd);
 	}
-	else if (command == "/PONG")
+	// else if (command == "PONG")
+	// {
+	// 	pong(clients, fd);
+	// }
+	else if (command == "kill")
 	{
-		pong(clients, fd);
+		ft_kill(parameters, clients, channels, fd);
 	}
 	//else if (commans)
 	else
 		{
 				ft_response(fd,"Unknown command: "); 
         }
+}
+void ft_welcome(int fd,std::map< int ,client> &clients)
+{
+	std::string one = ":irc.amal 001 " +  clients[fd].get_nickname()+ " :Welcome to the TopG Network, " + clients[fd].get_nickname() + '\n';
+	std::string two = ":irc.amal 002 " + clients[fd].get_nickname() + " :Your host is TopG, running version 4.5" + '\n';
+	std::string tre = ":irc.amal 003 " + clients[fd].get_nickname() + " :This server was created " + "2023-06-08 14:30:00" + '\n';
+	std::string foor = ":irc.amal 004 " + clients[fd].get_nickname() + " irc.amal TopG(enterprise)-2.3(12) netty(5.4c) proxy(0.9)\n";
+	send(fd, one.c_str(), one.length(), 0);
+	send(fd, two.c_str(), two.length(), 0);
+	send(fd, tre.c_str(), tre.length(), 0);
+	send(fd, foor.c_str(), foor.length(), 0);
 }
 
 command::command()
@@ -189,6 +176,12 @@ void command::ft_user(std::vector<std::string> parametres ,std::map< int ,client
 		}
 	}
 
+	if(clients[fd].get_nickname()== "")
+	{
+			ft_response(fd, "You should enter the nickname first");
+			return;
+	}
+
 
 	it = clients.find(fd);
 	
@@ -196,15 +189,15 @@ void command::ft_user(std::vector<std::string> parametres ,std::map< int ,client
 	{
 		clients[fd].set_username(parametres[0]);
 		clients[fd].set_hostname(parametres[1]);
-		;
 		clients[fd].set_servername(parametres[2]);
 		std::string realname;
 		for(size_t i = 3 ; i < parametres.size() ; i++)	
 			realname += parametres[i];
 	
 		clients[fd].set_realname(parametres[3]);
-		clients[fd].set_registered("registed");
-		ft_response(fd, "You are succesdful registred.");
+		if(clients[fd].get_nickname()!= "")
+			clients[fd].set_registered("registed");
+		ft_welcome(fd,clients);
 	}
 }
 
@@ -229,7 +222,6 @@ int  isValidNickname(const std::string& nickname)
 void command::ft_nick(std::vector<std::string> parametres ,std::map< int ,client> &clients ,int fd)
 {
 	client& sender = clients[fd];
-
 	if (parametres.empty())  
 	{
 		//std::cerr << "Error : No nickname provided ." << std::endl;
@@ -260,32 +252,31 @@ void command::ft_nick(std::vector<std::string> parametres ,std::map< int ,client
 	if(it!= clients.end())
 	{
 		it->second.set_nickname(parametres[0]);
-
 			ft_response(fd,"Nickname set successfully for client ");
-
-		//std::cout << "Nickname set successfully for client " << fd <<std::endl;
 	}
 }
 
-void ft_msg(channel* channelOfUsers, const std::string& msg) 
+void ft_msg(channel* channelOfUsers, const std::string& msg,std::map< int ,client> &clients) 
 {
     std::vector<int> users = channelOfUsers->get_Users();
     for (size_t i = 0; i < users.size(); ++i) 
 	{
-        ft_response(users[i], msg.c_str());
+		clients[users[i]].write(msg,users[i]);
     }
 
-    users = channelOfUsers->getadmin();
+    // std::set<int> users = channelOfUsers->get_operators();
 
-    for (size_t i = 0; i < users.size(); ++i) 
-	{
-        ft_response(users[i], msg.c_str());
-    }
+    // for (size_t i = 0; i < users.size(); ++i) 
+	// {
+	// 	clients[users[i]].write(msg,users[i]);
+    // }
 
-    if (channelOfUsers->getOwner() != -1)
-	{
-        ft_response(channelOfUsers->getOwner(), msg.c_str());
-    }
+    // if (channelOfUsers->getOwner() != -1)
+	// {
+	// 	clients[channelOfUsers->getOwner()].write(msg,channelOfUsers->getOwner());
+
+    // }
+
 }
 // Command: PASS ft_kick
 //Parameters: <password>
@@ -299,7 +290,7 @@ void command::ft_pass(std::vector<std::string> parametres ,std::map< int ,client
 		return;
 	}
 
-	if(clients[fd].is_registered() == "/pass") // register ou 3awd dar cmd pass
+	if(clients[fd].is_registered() == "pass"  || clients[fd].is_registered() == "registed") // register ou 3awd dar cmd pass
 	{	
 		ft_response(fd, std::string(ERR_ALREADYREGISTERED(sender.get_nickname())).c_str());
         return;
@@ -308,7 +299,7 @@ void command::ft_pass(std::vector<std::string> parametres ,std::map< int ,client
 	if (parametres[0] == pass) // 
 	{
 		clients[fd].set_registered("pass");
-		ft_response(fd,"PASS command successful: Client registered");
+		ft_response(fd,"PASS command successful");
     } else
 	{
 	   ft_response(fd,"ERR_PASSWDMISMATCH "); // dakhl cmd pass mais pass ghlat mechi nafs kalma li fi server  non moutchd
@@ -342,24 +333,28 @@ void command::ft_topic(std::vector<std::string> parametres , std::map<int ,clien
 	std::vector<channel*>::iterator it;
 	for (it = clients[fd].channels.begin(); it != clients[fd].channels.end(); ++it)
 	{
-			//std::cout << "im heeeeeeeeeeereeeeeeeeeee topic 1" << (*it)->get_name() << std::endl;
 		if ((*it)->get_name() == parametres[0])
 		{
 			joinedChannel = true;
 			if (parametres.size() == 1) 
 			{
-				// std::cout << "Topic in this channel: " << (*it)->Topic << std::endl;
 				std::string str= "Topic in this channel: " +  (*it)->get_Topic();
-				ft_response(fd,str.c_str());
+				clients[fd].reply(RPL_TOPIC(clients[fd].get_nickname(),parametres[0],(*it)->get_Topic()),fd);
 				break;
-			//if (std::find((*it)->Admin.begin(), (*it)->Admin.end(), fd) != (*it)->Admin.end() || (*it)->Owner() == fd)
 
-			} else if (std::find((*it)->getadmin().begin(), (*it)->getadmin().end(), fd) != (*it)->getadmin().end() || (*it)->getOwner() == fd) // membre and admin change sjt
+			} else if ((*it)->is_operator(fd) || (*it)->getOwner() == fd || !(*it)->get_mode().count('t')) // opertor ownor ila kant mod t
 			{
-				(*it)->set_topic(parametres[1]);
-				// std::cout << "Topic of this channel is changed to: " << (*it)->Topic << std::endl;
-				std::string msg = "Topic of channel " + (*it)->get_name() + "is changed to " + parametres[1]; // send msg ga3 membres  tabdl
-				ft_msg(*it, msg); // send msg gam membr li fdk channel
+				std::string newTopic;
+				for(size_t  i = 1; i  < parametres.size();  i++)
+				{
+					newTopic += parametres[i];
+					if(i != parametres.size() - 1)
+						newTopic  += " ";
+				}
+				(*it)->set_topic(newTopic);
+			
+				std::string msg = ":" + clients[fd].get_prefix() + " TOPIC " + (*it)->get_name() + " " + newTopic; // send msg ga3 membres  tabdl
+				ft_msg(*it, msg,clients); // send msg gam membr li fdk channel
 				return;
 			}
 			else if(parametres.size() > 1)  // member fiha but its not admins
@@ -387,21 +382,19 @@ void command::ft_topic(std::vector<std::string> parametres , std::map<int ,clien
 
 int searchUserInsideChannel(int fd, channel channelS)
 {
-	std::vector<int> test = channelS.get_Users();
 	// for(size_t i = 0; i < test.size() ; i++ )
 	// {
 	// 	std::cout << "users ===> " << test[i] << "====" << std::endl;
 	// }
-
+	if(fd == channelS.getOwner())
+		return 3;
+	if(channelS.is_operator(fd))
+		return 2;
+	std::vector<int> test = channelS.get_Users();
 	if (std::find(test.begin(), test.end(), fd) != test.end())
 		return 1;
 
-	test = channelS.getadmin();
 
-	if(std::find(test.begin(), test.end(), fd) != test.end())
-		return 2;
-	if(fd == channelS.getOwner())
-		return 3;
 	return 0;
 }
 
@@ -415,7 +408,6 @@ void command::ft_join(std::vector<std::string> parametres , std::map<int ,client
 		return;
 	}
 		std::istringstream iss2;
-
     if (parametres.size() > 1)  // splite lkey
 	{
         iss2.str(parametres[1]);
@@ -424,12 +416,10 @@ void command::ft_join(std::vector<std::string> parametres , std::map<int ,client
     std::string buffer;
     std::istringstream iss(parametres[0]); // istringstream  red in string  input 
 	while (std::getline(iss,buffer,','))
-	{	
+	{
 		std::vector<channel *>::iterator it;
-		std::cout <<"buffer ==>" << buffer << std::endl;
 		for (it = channels.begin(); it != channels.end() ;++it)
 		{
-			std::cout << "channels name ==>" << (*it)->get_name()<< std::endl;
 			if ((*it)->get_name()== buffer && searchUserInsideChannel(fd,**it))
 			{
 				 //std::cout<< "channel  ==>" << searchUserInsideChannel(fd,**it) << "&& fd ==>" << fd <<std::endl;
@@ -439,41 +429,63 @@ void command::ft_join(std::vector<std::string> parametres , std::map<int ,client
 			}
 			else if((*it)->get_name()== buffer) 
 			{
+				if ((*it)->get_mode().count('i') != 0 && !(*it)->is_operator(fd)) { // check i  
+					ft_response(fd, std::string(ERR_CHANOPRIVSNEEDED(sender.get_nickname(), buffer)).c_str());
+					return;
+				}
+				else if((*it)->get_mode().count('l') && static_cast<unsigned int>((*it)->_limit) <= (*it)->get_Users().size()) // check  5 l l <= 10
+				{
+					ft_response(fd, std::string(ERR_CHANNELISFULL(sender.get_nickname(), buffer)).c_str());
+					return;
+				}
 				buffer = "";
 				if(parametres.size() > 1)  // check key dakh key
 				{
 					std::istringstream iss1(parametres[1]); // key 
 					getline(iss1,buffer,',');
 				}
-				if((*it)->get_key().empty() ||(!(*it)->get_key().empty() && (*it)->get_key() == buffer)) // check get_name = channel=> check channel ila maknch 3andha key ou la 3andha key get_key == buffer(,))
+				if(!(*it)->get_mode().count('k') ||(!(*it)->get_key().empty() && (*it)->get_key() == buffer)) // check get_name = channel=> check channel ila maknch 3andha key ou la 3andha key get_key == buffer(,))
 				{
-					(*it)->addUser(fd); // add the user to the channel
+					// add the user to the channel
 					clients[fd].channels.push_back(&(*(*it))); // chanl dil client
 					ft_response(fd, "You're succesfully joined the channel");
 					std::vector<int> users = (*it)->get_Users();
+					(*it)->addUser(fd); 
+					
 					std::string names;
 					for(size_t i = 0; i <  users.size(); i++)
 					{
-						names = " " + users[i]+clients[fd].get_username();
-						std::string msg = clients[fd].get_username()  + " has joined the channel " + (*it)->get_name();
-						ft_response(users[i],msg.c_str());
+						if((*it)->getOwner() == users[i])
+							names += "@" + clients[(*it)->getOwner()].get_nickname();
+						else
+							names += " " + clients[users[i]].get_nickname();
+					
+						std::string msg = clients[fd].get_nickname()  + " has joined the channel" + (*it)->get_name();
+						clients[users[i]].write(RPL_JOIN(clients[fd].get_prefix(),(*it)->get_name() ),users[i]);
+						
 					}
 					
-					users = (*it)->getadmin();
-					for (std::vector<int>::size_type i = 0; i < users.size(); i++)
-					{
-						names = " " + users[i]+clients[fd].get_username();
-						std::string msg = clients[fd].get_username()  + " has joined the channel " + (*it)->get_name();
+					// users = (*it)->getadmin();
+					// for (std::vector<int>::size_type i = 0; i < users.size(); i++)
+					// {
+					// 	std::cout << "admin ==>" << fd << std::endl;
 
-						ft_response(users[i], msg.c_str());
-					}
-						std::string msg = clients[fd].get_username()  + " has joined the channel " + (*it)->get_name();
+					// 	names += " " + clients[users[i]].get_nickname();
+					// 	clients[users[i]].write(RPL_JOIN(clients[fd].get_prefix(),(*it)->get_name() ),users[i]);
+
+					// }
+					// 	std::string msg = clients[fd].get_nickname()  + " has joined the channel " + (*it)->get_name();
+					// 	std::cout << "owner==>" << fd << std::endl;
+
 						
-						ft_response((*it)->getOwner(),msg.c_str());
-							msg = "Welcome! You joined channel "+ (*it)->get_name() +  "w(*it)h topic:" + (*it)->get_Topic();
-						ft_response(fd,msg.c_str() );
-						msg = "Members of the channel:" + names;
-						ft_response(fd, msg.c_str());
+						clients[fd].reply(RPL_NAMREPLY(clients[fd].get_nickname(), (*it)->get_name(), names),fd);
+						clients[fd].reply(RPL_ENDOFNAMES(clients[fd].get_nickname(),(*it)->get_name() ),fd);
+						// msg = "Welcome! You joined channel "+ (*it)->get_name() +  "with topic:" + (*it)->get_Topic();
+						// clients[(*it)->getOwner()].write(RPL_JOIN(clients[fd].get_prefix(),(*it)->get_name() ),(*it)->getOwner());
+						// ft_response(fd,msg.c_str() );
+						// clients[fd].reply(msg = "Members of the channel:" + names;
+						// ft_response(fd, msg.c_str());
+						break;
 				}
 				else{
 
@@ -484,6 +496,7 @@ void command::ft_join(std::vector<std::string> parametres , std::map<int ,client
 			}
 			if(it == channels.end())  // ila wslt end makntch channel create
 			{
+				
 				std::string key = ""; // 
 				if(parametres.size() > 1)
 				{
@@ -496,9 +509,16 @@ void command::ft_join(std::vector<std::string> parametres , std::map<int ,client
 				channel* newchannel = new channel(buffer, fd, "", key);
 				channels.push_back(newchannel); 
 				clients[fd].channels.push_back((newchannel));
-				ft_response(fd, "created and joined");
-			}
+
+				clients[fd].reply(RPL_NAMREPLY(clients[fd].get_nickname(), buffer, "@" + clients[fd].get_nickname() ),fd); // names of memres
+				clients[fd].reply(RPL_ENDOFNAMES(clients[fd].get_nickname(),buffer ),fd);			//End of name
+				clients[fd].write(RPL_JOIN(clients[fd].get_prefix(),buffer ),fd);
+				 newchannel->set_Owner(fd);
+					std::cout << "==========" << newchannel->getOwner() << std::endl;
+				}
+
 	}
+
 			// create channel that not exist 
 }
 
@@ -578,19 +598,13 @@ void command::ft_kick(std::vector<std::string> parametres , std::map<int ,client
 		if(found != -1 && (searchResult == 1 || (searchResult ==2 && owner ==1) ))
 		{
 			std::vector<int>::iterator it;
-			if(searchResult == 1)
-			{
 			 	it = std::find(channelOfUsers->get_Users().begin(), channelOfUsers->get_Users().end(), found);
 				if (it != channelOfUsers->get_Users().end()) {
 					channelOfUsers->get_Users().erase(it); // supprime file descrptor dilow (client)
 				}
-			}
-			else
-			{
-			 	it = std::find(channelOfUsers->getadmin().begin(), channelOfUsers->getadmin().end(), found);
-				if (it != channelOfUsers->getadmin().end()) {
-					channelOfUsers->getadmin().erase(it); // supprim file descptor 
-				}}
+			if(searchResult == 2)
+					channelOfUsers->get_operators().erase(found); // supprim file descptor 
+				
 				for(size_t i = 0; i < clients[found].channels.size(); i++) {
 					if(clients[found].channels[i]->get_name() == channel_name)
 					{
@@ -603,8 +617,7 @@ void command::ft_kick(std::vector<std::string> parametres , std::map<int ,client
 						std::getline(iss1, buffer1, ',');
 					}
 					
-						std::string msg = clients[found].get_username()  + "has been removed from " +channelOfUsers->get_name() + ":" + buffer1;
-						ft_msg(channelOfUsers,msg);
+						ft_msg(channelOfUsers,RPL_KICK(clients[fd].get_prefix(),channelOfUsers->get_name()  , clients[found].get_nickname(), buffer1),clients);
 
 					}
 
@@ -639,20 +652,15 @@ void notifyClientsOfQuit(int fd, const std::string& quitReason, std::map<int, cl
             if (check) 
 			{
 				std::vector<int>::iterator it;
-
-				if(check == 1)
-				{
-				 	it = std::find((*chanIt)->get_Users().begin(), (*chanIt)->get_Users().end(), fd);
+				it = std::find((*chanIt)->get_Users().begin(), (*chanIt)->get_Users().end(), fd);
 				if (it != (*chanIt)->get_Users().end()) {
 					(*chanIt)->get_Users().erase(it);
 				}
-				}
-				else if(check == 2)
+				
+				if(check == 2)
 				{
-					it = std::find((*chanIt)->getadmin().begin(), (*chanIt)->getadmin().end(), fd);
-					if (it != (*chanIt)->getadmin().end()) {
-						(*chanIt)->getadmin().erase(it);
-					}}
+						(*chanIt)->get_operators().erase(fd);
+					}
 					else {
 						(*chanIt)->set_Owner(-1); // -1 channel not owner
 					}
@@ -664,28 +672,30 @@ void notifyClientsOfQuit(int fd, const std::string& quitReason, std::map<int, cl
 						{
 							if(std::find(checkExist.begin(), checkExist.end(),users[i]) != checkExist.end())
 								continue;
-							ft_response(users[i], msg.c_str());
+							clients[users[i]].reply(msg,users[i]);
 							checkExist.push_back(users[i]);
 						}
 
-						users = (*chanIt)->getadmin();
+						// users = (*chanIt)->getadmin();
 
-						for (size_t i = 0; i < users.size(); ++i) 
-						{
-							if(std::find(checkExist.begin(), checkExist.end(),users[i]) != checkExist.end())
-								continue;
-							ft_response(users[i], msg.c_str());
-							checkExist.push_back(users[i]);
+						// for (size_t i = 0; i < users.size(); ++i) 
+						// {
+						// 	if(std::find(checkExist.begin(), checkExist.end(),users[i]) != checkExist.end())
+						// 		continue;
 
-						}
+						// 	clients[users[i]].reply(msg,users[i]);
+						// 	checkExist.push_back(users[i]);
 
-						if ((*chanIt)->getOwner() != -1)
-						{
-							if(std::find(checkExist.begin(), checkExist.end(),(*chanIt)->getOwner()) != checkExist.end())
-								continue;
-							ft_response((*chanIt)->getOwner(), msg.c_str());
-							checkExist.push_back((*chanIt)->getOwner());
-						}
+						// }
+
+						// if ((*chanIt)->getOwner() != -1)
+						// {
+						// 	if(std::find(checkExist.begin(), checkExist.end(),(*chanIt)->getOwner()) != checkExist.end())
+						// 		continue;
+						// 	clients[(*chanIt)->getOwner()].reply(msg,(*chanIt)->getOwner());
+
+						// 	checkExist.push_back((*chanIt)->getOwner());
+						// }
 					}
     }
 }
@@ -703,10 +713,10 @@ void command::ft_Quit(std::vector<std::string> parameters, std::map<int, client>
     std::string quitReason;
     if (parameters.empty())
 	{
-    	quitReason = "Quit.";
+    	quitReason = " QUIT ";
     } else 
 	{
-    	quitReason = "Quit: " + parameters[0];
+    	quitReason = " QUIT " + parameters[0];
 		for(size_t i = 1 ; i < parameters.size() ; i++)	
 			quitReason += parameters[i];
 	
@@ -715,7 +725,7 @@ void command::ft_Quit(std::vector<std::string> parameters, std::map<int, client>
     closeConnection(fd, clients);
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/*parte*/
 
 int ft_ckeak(std::string &nick, std::map<int, client>& clients)
 {
@@ -931,7 +941,7 @@ void command::ft_part(std::vector<std::string> args, std::map<int, client>& clie
 	}
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
 
 // NICK CHA
 void command::invite(int fd, const std::vector<std::string>& args, std::map<int, client>& clients, std::vector<channel*>& channels) {
@@ -1014,20 +1024,8 @@ void command::ping(std::vector<std::string> args, std::map<int, client>& clients
     }
 
     // Respond to the PING command
-    clients[fd].write(fd, RPL_PING(clients[fd].get_prefix(), target));
+    clients[fd].write(fd, RPL_PONG(target));
 }
-
-void command::pong(std::map<int, client>& clients, int fd)
-{
-
-    // Vérifier que le client existe dans la map des clients
-    if (clients.find(fd) == clients.end())
-        return;
-
-    // Répondre à la commande PONG
-    clients[fd].write(fd, "PONG received");
-}
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void command::mode(std::map<int, client>& clients, std::vector<std::string> args, std::vector<channel*>& channels, int fd) {
@@ -1055,12 +1053,12 @@ void command::mode(std::map<int, client>& clients, std::vector<std::string> args
     }
 
     // user is not an operator
-    if (!chan->is_operator(fd) && !chan->is_admin(fd)) {
+    if (!chan->is_operator(fd) && chan->getOwner() != fd) 
+	{
         ft_response(fd, std::string(ERR_CHANOPRIVSNEEDED(sender.get_nickname(), target)).c_str());
         return;
     }
-
-    // Changing the mode
+    //Changing the mode
     std::string modeStr = args[1];
 
     if (modeStr == "+i" || modeStr == "-i") {
@@ -1098,6 +1096,50 @@ void command::mode(std::map<int, client>& clients, std::vector<std::string> args
 	else 
         ft_response(fd, std::string(ERR_UNKNOWNMODE(sender.get_nickname(), modeStr)).c_str());
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void command::ft_kill(std::vector<std::string> args, std::map<int, client>& clients, std::vector<channel*>& channels, int fd) {
+    if (args.size() < 2 || args[0].empty() || args[1].empty() || args[1].at(0) != ':') {
+        ft_response(fd, std::string(ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "KILL")).c_str());
+        return;
+    }
+
+    std::string target = args.at(0);
+    std::string comment = args.at(1).substr(1);
+
+    // Vérifier si l'utilisateur est un opérateur dans au moins un canal
+    bool isOperatorInAnyChannel = false;
+    for (size_t i = 0; i < channels.size(); ++i) {
+        if (channels[i]->is_operator(fd)) {
+            isOperatorInAnyChannel = true;
+            break;
+        }
+    }
+
+    if (!isOperatorInAnyChannel) {
+        ft_response(fd, std::string(ERR_NOPRIVILEGES(clients[fd].get_nickname())).c_str());
+        return;
+    }
+
+    client* destClient = NULL;
+    for (std::map<int, client>::iterator it = clients.begin(); it != clients.end(); ++it) {
+        if (it->second.get_nickname() == target) {
+            destClient = &(it->second);
+            break;
+        }
+    }
+
+    if (!destClient) {
+        ft_response(fd, std::string(ERR_NOSUCHNICK(clients[fd].get_nickname(), target)).c_str());
+        return;
+    }
+
+    destClient->close_connection();
+
+    ft_response(fd, std::string("ERROR :Closing Link: ircserv (Killed (" + clients[fd].get_nickname() + " (" + comment + ")))").c_str());
+}
+
 
 command::~command()
 {

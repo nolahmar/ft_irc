@@ -4,6 +4,21 @@
 #include "server.hpp"
 
 // #include "ft_bot.hpp"
+void welcomemsg(void)
+{
+	std::string welcome = RED;
+	welcome.append("██╗    ██╗███████╗██╗      ██████╗ ██████╗ ███╗   ███╗███████╗\n");
+	welcome.append("██║    ██║██╔════╝██║     ██╔════╝██╔═══██╗████╗ ████║██╔════╝\n");
+	welcome.append("██║ █╗ ██║█████╗  ██║     ██║     ██║   ██║██╔████╔██║█████╗\n");
+	welcome.append("██║███╗██║██╔══╝  ██║     ██║     ██║   ██║██║╚██╔╝██║██╔══╝\n");
+	welcome.append("╚███╔███╔╝███████╗███████╗╚██████╗╚██████╔╝██║ ╚═╝ ██║███████╗\n");
+	welcome.append(" ╚══╝╚══╝ ╚══════╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝\n");
+	welcome.append(BLEU);
+	welcome.append("You need to login so you can start chatting OR you can send HELP to see how :) \n");
+	welcome.append(RS);
+    std::cout << welcome<< std::endl;
+	//return (welcome);
+}
 
 bool server::signn = true;
 server::server()
@@ -35,22 +50,33 @@ void server::ft_server()
     int c = 0;
     command executeCommand = command();
     //bot bot;
+
+
     serverSocket =  socket(AF_INET, SOCK_STREAM, 0);
     if (serverSocket == -1)
     {
         std::cout << "error in create socket \n";
         close (serverSocket);
     }
-    struct sockaddr_in serverAddr;
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_port = htons(8080);
-    serverAddr.sin_addr.s_addr = INADDR_ANY;
-    int optval = 1;
-    if (setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &optval, sizeof(optval)) == -1) 
-    {
-        close(serverSocket);
-        throw "Error setting socket options";
-    }
+   struct sockaddr_in serverAddr;
+serverAddr.sin_family = AF_INET;
+serverAddr.sin_port = htons(8080);
+serverAddr.sin_addr.s_addr = INADDR_ANY;
+int optval = 1;
+
+// Set SO_REUSEADDR
+if (setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) == -1) 
+{
+    close(serverSocket);
+    throw "Error setting SO_REUSEADDR socket option";
+}
+
+// Set SO_REUSEPORT
+if (setsockopt(serverSocket, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval)) == -1) 
+{
+    close(serverSocket);
+    throw "Error setting SO_REUSEPORT socket option";
+}
     if (bind(serverSocket, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) == -1)
     {
         close(serverSocket);
@@ -61,7 +87,9 @@ void server::ft_server()
         close(serverSocket);
         throw "Error listening";
     }
+     welcomemsg();
     std::cout << YELLOW << "Server listening .......\n" << BD;
+    
     std::vector<pollfd> fds;
     pollfd t;
     t.fd = serverSocket;
@@ -86,8 +114,10 @@ void server::ft_server()
                      
 		                socklen_t clientAddrSize = sizeof(clientAddr);
                         int clientsock = accept(serverSocket, (struct sockaddr *)&clientAddr, &clientAddrSize);
+                        std::cout << "fd ======" << clientsock << std::endl;
                         if (clientsock == -1)
                         {
+                            
                             close(serverSocket);
                             close (clientsock);
                             throw "Error in accept";
@@ -98,6 +128,7 @@ void server::ft_server()
                             t.fd = clientsock;
                             t.events = POLLIN;
                             fds.push_back(t); 
+                            
                             client *newClient = new client();
                             clients[t.fd] = *newClient;
                             std::cout << RS << "accept connection ......." << BD << std::endl;
@@ -108,6 +139,7 @@ void server::ft_server()
                         char buffer[1024];
                         std::string total;
                         int bytesReceived = recv(fds[i].fd, buffer, sizeof(buffer), 0);
+                        std::cout << "=========" << fds[i].fd << std::endl;
                         if (bytesReceived == -1)
                         {
                             close(fds[i].fd);
@@ -126,6 +158,7 @@ void server::ft_server()
                        {
                             std::string line = std::string(buffer, bytesReceived);
                             std::vector<std::string> tokens;
+                            std::cout << "line ==>" << line << std::endl;
                             std::istringstream iss(line);
                             std::string token;
                             std::string com ;

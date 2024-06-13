@@ -35,7 +35,9 @@ class command
 	void invite(int fd, const std::vector<std::string>& args, std::map<int, client>& clients, std::vector<channel*>& channels);
 	void mode(std::map<int, client>&clients, std::vector<std::string> args, std::vector<channel*>& channels, int fd);
 	void ping(std::vector<std::string> args, std::map<int, client>& clients, int fd);
-	void pong(std::map<int, client>& clients, int fd);
+	// void pong(std::map<int, client>& clients, int fd);
+	//void whois(std::vector<std::string> args, std::map<int, client>& clients, int fd);
+	void ft_kill(std::vector<std::string> args, std::map<int, client>& clients, std::vector<channel*>& channels, int fd);
 	// std::string welcomemsg(void);
 
 	~command();

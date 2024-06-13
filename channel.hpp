@@ -23,8 +23,8 @@ class channel
         std::string Topic;
         std::set<int> Operators; // Vecteur pour stocker les identifiants des opérateurs de canal
         std::set<char> mode;
-        int _limit; // Variable pour stocker la limite du nombre d'utilisateurs
     public:
+        int _limit; // Variable pour stocker la limite du nombre d'utilisateurs
         std::vector<int>  Admin;
         channel(std::string& name, int owner, std::string topic, std::string key);
         channel();
@@ -60,6 +60,8 @@ class channel
         bool change_key_mode(std::vector<std::string>& args, std::string& mode, int fd);
         bool change_operator_mode(std::map<int, client>& clients, std::vector<std::string>& args, std::string& mode, int fd);
         bool change_limit_mode(std::vector<std::string>& args, std::string& mode, int fd);
+        std::set<int> get_operators();
+
 };
 
 void ft_response(int fd, const char* message);

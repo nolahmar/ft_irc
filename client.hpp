@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include<map>
+#include <set>
 
 #define ERR_NEEDMOREPARAMS(source, command)             "461 " + source + " " + command + " :Not enough parameters"
 #define ERR_NOSUCHCHANNEL(source, channel)              "403 " + source + " " + channel + " :No such channel"
@@ -27,16 +28,23 @@
 #define ERR_NOTONCHANNEL(source, channel)               "442 " + source + " " + channel + " :You're not on that channel"
 #define RPL_PART(source, channel, reason)                       ":" + source + " PART :" + channel + " " + reason
 #define ERR_UNKNOWNMODE(nickname, mode) "472 " + nickname + " " + mode + " :is unknown mode char to me"
-#define RPL_PONG(prefix, token) ":" + prefix + " PONG :" + token
+#define RPL_PONG(token) "PONG :" + token
 #define ERR_USERONCHANNEL(source, channel) "443 " + source + " " + channel + " :is already on channel"
 #define RPL_INVITING(user, channel) "341 " + user + " " + channel + " :Inviting"
 #define ERR_ALREADYREGISTERED(source)                   "462 " + source + " :You may not register"
 #define ERR_NONICKNAMEGIVEN(source)                     "431 " + source + " :Nickname not given"
-#define ERR_NICKNAMEINUSE(source)                       "433 " + source + " " + source  + " :Nickname is already in use"
+#define ERR_NICKNAMEINUSE(source)                       "433 " + source   + " :Nickname is already in use"
 #define ERR_ERRONEUSNICKNAME(client, nick) "432 " + client + " " + nick + " :Erroneous nickname"
 #define ERR_INVITEONLYCHAN(client, channel) "473 " + client + " " + channel + " :Cannot join channel (+i)"
 #define ERR_BADCHANNELKEY(source, channel)              "475 " + source + " " + channel + " :Cannot join channel (+k)"
 #define ERR_USERNOTINCHANNEL(source, nickname, channel) "441 " + source + " " + nickname + " " + channel + " :They aren't on that channel"
+#define ERR_NOPRIVILEGES(source) ("481 " + source + " :Permission Denied- You're not an IRC operator")
+#define RPL_NAMREPLY(source, channel, users)            "353 " + source + " = " + channel + " :" + users
+#define RPL_ENDOFNAMES(source, channel)                 "366 " + source + " " + channel + " :End of /NAMES list."
+#define RPL_JOIN(source, channel)                       ":" + source + " JOIN :" + channel
+#define RPL_KICK(source, channel, target, reason)       ":" + source + " KICK " + channel + " " + target + " :" + reason
+#define RPL_TOPIC(nickname,channel,topic)      "332 " + nickname + " " +  channel + " " + topic 
+#define ERR_CHANNELISFULL(source, channel)              "471 " + source + " " + channel + " :Cannot join channel (+l)"
 
 class channel;
 class client
@@ -53,8 +61,8 @@ class client
         std::string password;
         channel* ChannelPtr;
         std::string servername;
-        std::vector<std::string>  Operators;
-        std::vector<std::string> modes;
+        std::set<std::string>  Operators;
+        std::set<std::string> modes;
 
     public:
     /* Getters */
@@ -66,6 +74,7 @@ class client
         std::string     get_username() const;
         std::string     get_realname() const;
         std::string     get_hostname() const;
+        std::string get_servername() const;
         int get_id() const;
         std::vector<channel*>       get_channel() const;
         channel* get_channel_by_name(const std::string& name) const;
@@ -76,7 +85,8 @@ class client
         std::string get_prefix() const;
         void write(int fd, const std::string& message) const;
         void remove_channel(const channel* channelToRemove);
-        std::vector<std::string> &get_operators();
+        void close_connection();
+        std::set<std::string> &get_operators();
 
     /**setes*/
         void            set_nickname(const std::string nickn);
@@ -85,10 +95,13 @@ class client
         void            set_hostname(const std::string hostn);
         void            set_channel(const std::vector<channel*> chan);
         void            set_registered(std::string status);
+        void            write(const std::string& message,int fd) const;
+        void            reply(const std::string& reply,int fd);
         void            set_servername(const std::string    server_n);
         client();
         client & operator=(const client &orginal);
         client(const client &orginal);
+
         ~client();
 };
 

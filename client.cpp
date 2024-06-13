@@ -48,7 +48,6 @@ void client::sendMessage(const std::string& message) {
 
 void client::invite_to_channel(int fd, std::map<int, client>::iterator& invitedClient, channel* channel) {
     int target = invitedClient->first;
-    //check mode !!!!! 
     // Envoyer un message d'invitation à l'utilisateur invité !!! Merciiii
     write(target, "INVITE " + get_nickname() + " " + channel->get_name());
     // Join target to the target channel
@@ -72,6 +71,22 @@ void client::remove_channel(const channel* channelToRemove)
     }
 }
 
+
+
+void            client::write(const std::string& message,int fd) const
+{
+    std::string buffer = message + "\r\n";
+    std::cout << "buffer ===========>" << buffer << "||" << std::endl;
+    if (send(fd, buffer.c_str(), buffer.length(), 0) < 0)
+        throw std::runtime_error("Error while sending a message to a client!");
+}
+
+void            client::reply(const std::string& reply,int fd)
+{
+
+    this->write(":" + get_prefix() + " " + reply,fd);
+}
+
 int client::get_fd() const
 {
 	return fd;
@@ -79,15 +94,15 @@ int client::get_fd() const
 
 std::string client::get_prefix() const 
 {
-     std::string user;
-     std::string host;
+     std::string user = "";
+     std::string host = "";
 
     if (!username.empty()) {
         user = "!" + username;
     }
 
     if (!hostname.empty()) {
-        host = "@" + hostname;
+        host = "@localhost";
     }
 
     return nickname + user + host;
@@ -136,6 +151,11 @@ std::vector<channel *> client::get_channel() const
 	return channels;
 }
 
+std::string client::get_servername() const
+{
+    return servername;
+}
+
 channel* client::get_channel_by_name(const std::string& name) const {
 
     for (std::vector<channel*>::const_iterator it = this->channels.begin(); it != this->channels.end(); ++it)
@@ -177,7 +197,13 @@ void           client:: set_servername(const std::string    server_n)
 	this->servername = server_n;
 }
 
-std::vector<std::string> &client::get_operators() {
+void client::close_connection() {
+    // Fermeture du socket
+    close(fd);
+    state = "offline";
+}
+
+std::set<std::string> &client::get_operators() {
     return Operators;
 }
 

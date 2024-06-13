@@ -3,7 +3,7 @@
 
 channel::channel(std::string& name, int owner, std::string topic, std::string key)
 		: Name(name), Owner(owner), Key(key), Topic(topic), _limit(-1) {
-        Admin.push_back(owner); // L'utilisateur qui crée le canal devient automatiquement administrateur
+        // Admin.push_back(owner); // L'utilisateur qui crée le canal devient automatiquement administrateur
         Users.push_back(owner);
 }
 
@@ -162,6 +162,10 @@ void channel::set_Owner(const int owner)
 void channel::set_Users(const std::vector<int> users)
 {
 	this->Users =  users;
+}
+std::set<int> channel::get_operators() 
+{
+    return this->Operators;
 }
 
 void channel::addUser(int userId)
