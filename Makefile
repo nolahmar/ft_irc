@@ -1,4 +1,4 @@
-F_NAME = server.cpp client.cpp channel.cpp main.cpp command.cpp
+F_NAME = server.cpp client.cpp channel.cpp main.cpp command.cpp ft_bot.cpp ft_transfer_file.cpp
 
 NAME = ircserv
 CXX = c++

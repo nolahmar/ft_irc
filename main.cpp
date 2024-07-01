@@ -5,21 +5,23 @@
 
 int main(int argc,char **argv)
 {
-    //argv = argv;
-    (void)argv;
-     if(argc != 3)
+   (void)argv;
+    if(argc != 3)
     {
         std::cerr << "usage : ./ircserv [port] [password]" << std::endl;
             return (1);
     }
-    try{
-        server serverClient = server(argv[2]);
-        serverClient.ft_server();
-    }
-    catch(std::string s)
+    server serverClient = server(argv[2], std::atoi(argv[1]));
+    try
     {
-        std::cout << "error ==>" << s << std::endl;
+        signal(SIGINT, serverClient.signalHandler);  
+        signal(SIGQUIT, serverClient.signalHandler);
+         serverClient.ft_server();
     }
-      return (0);
-
+    catch(std::string &str)
+    {
+        std::cout << str << BD << std::endl;
+        serverClient.ft_close();
+    }
+    return (0);
 }

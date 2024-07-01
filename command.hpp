@@ -12,7 +12,7 @@
 #include <string>
 #include <algorithm>
 #include "client.hpp"
-
+#include "ft_transfer_file.hpp"
 
 class command
 {
@@ -26,7 +26,7 @@ class command
 	void ft_user(std::vector<std::string> parametres ,std::map< int ,client> &clients,int fd);
 	void ft_pass(std::vector<std::string> parametres ,std::map< int ,client> &clients ,int fd ,std::string pass);
 	void ft_join(std::vector<std::string> parametres , std::map<int ,client> &clients ,int fd,std::vector<channel *> &channels);
-	void ft_nick(std::vector<std::string> parametres ,std::map< int ,client> &clients ,int fd);
+	void ft_nick(const std::vector<std::string> &parametres ,std::map< int ,client> &clients ,int fd);
 	void ft_topic(std::vector<std::string> parametres , std::map<int ,client> &clients ,int fd);
 	void ft_Quit(std::vector<std::string> parameters, std::map<int, client>& clients, int fd, std::vector<channel *>& channels);
 	void ft_privmsg(std::vector<std::string> args, std::map<int, client>& clients, int fd);
@@ -35,10 +35,6 @@ class command
 	void invite(int fd, const std::vector<std::string>& args, std::map<int, client>& clients, std::vector<channel*>& channels);
 	void mode(std::map<int, client>&clients, std::vector<std::string> args, std::vector<channel*>& channels, int fd);
 	void ping(std::vector<std::string> args, std::map<int, client>& clients, int fd);
-	// void pong(std::map<int, client>& clients, int fd);
-	//void whois(std::vector<std::string> args, std::map<int, client>& clients, int fd);
-	void ft_kill(std::vector<std::string> args, std::map<int, client>& clients, std::vector<channel*>& channels, int fd);
-	// std::string welcomemsg(void);
 
 	~command();
 

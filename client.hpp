@@ -15,7 +15,7 @@
 #include <sys/socket.h>
 #include<map>
 #include <set>
-
+#include "ft_bot.hpp"
 #define ERR_NEEDMOREPARAMS(source, command)             "461 " + source + " " + command + " :Not enough parameters"
 #define ERR_NOSUCHCHANNEL(source, channel)              "403 " + source + " " + channel + " :No such channel"
 #define ERR_CANNOTSENDTOCHAN(source, channel)           "404 " + source + " " + channel + " :Cannot send to channel"
@@ -45,6 +45,7 @@
 #define RPL_KICK(source, channel, target, reason)       ":" + source + " KICK " + channel + " " + target + " :" + reason
 #define RPL_TOPIC(nickname,channel,topic)      "332 " + nickname + " " +  channel + " " + topic 
 #define ERR_CHANNELISFULL(source, channel)              "471 " + source + " " + channel + " :Cannot join channel (+l)"
+#define ERR_USERONCHANNELL(source)           "443 " + source +  " :is already on channel"
 
 class channel;
 class client
@@ -64,8 +65,11 @@ class client
         std::set<std::string>  Operators;
         std::set<std::string> modes;
 
+         std::map<std::vector<std::string>, std::string> bufferFile;
+
     public:
     /* Getters */
+    bot bot_client;
         std::vector<channel*>  channels;
 
         int             get_fd() const;
@@ -98,6 +102,8 @@ class client
         void            write(const std::string& message,int fd) const;
         void            reply(const std::string& reply,int fd);
         void            set_servername(const std::string    server_n);
+        void            set_bufferFile(std::string sender, std::string &buffer, const std::string &filename);
+        std::map<std::vector<std::string>, std::string> &get_dataBuffer();
         client();
         client & operator=(const client &orginal);
         client(const client &orginal);

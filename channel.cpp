@@ -3,15 +3,15 @@
 
 channel::channel(std::string& name, int owner, std::string topic, std::string key)
 		: Name(name), Owner(owner), Key(key), Topic(topic), _limit(-1) {
-        // Admin.push_back(owner); // L'utilisateur qui crée le canal devient automatiquement administrateur
         Users.push_back(owner);
 }
 
 channel::channel(): Owner(-1), _limit(-1) {}
 
 channel::channel(const  channel &original)
-: Name(original.Name), Owner(original.Owner), Users(original.Users), Key(original.Key),
-          Topic(original.Topic), _limit(original._limit), Admin(original.Admin)
+: Name(original.Name), Owner(original.Owner), Key(original.Key),
+          Topic(original.Topic), Operators(original.Operators), mode(original.mode), _limit(original._limit)
+          , Users(original.Users)
 {
 
 }
@@ -29,8 +29,8 @@ channel &channel::operator=(const channel &original)
             Key = original.Key;
             Topic = original.Topic;
             _limit = original._limit;
-            Admin = original.Admin;
-            // Operators = original.Operators;
+            Operators = original.Operators;
+            mode = original.mode;
         }
         return *this;
     }
@@ -46,35 +46,9 @@ void channel::broadcast(const std::string& message, std::map<int, client>& clien
 }
 
 
-// void channel::remove_client(const client* clientToRemove)
-// {
-//     for (std::vector<client*>::iterator it = clients.begin(); it != clients.end();)
-//     {
-//         if (*it == clientToRemove)
-//         {
-//             it = clients.erase(it);
-//             break;
-//         }
-//         else
-//         {
-//             ++it;
-//         }
-//     }
-// }
-
 bool channel::is_member(int fd) const {
-    if (std::find(Users.begin(), Users.end(), fd) != Users.end() ||
-        this->is_admin(fd) || Owner == fd) {
+    if (std::find(Users.begin(), Users.end(), fd) != Users.end() || Owner == fd) {
         return true;
-    }
-    return false;
-}
-
-bool channel::is_admin(int fd) const {
-    for (std::vector<int>::const_iterator it = Admin.begin(); it != Admin.end(); ++it) {
-        if (*it == fd) {
-            return true;
-        }
     }
     return false;
 }
@@ -109,15 +83,6 @@ std::string channel::get_Topic() const
 	return this->Topic;
 }
 
-// std::vector<int>& channel::get_operators() {
-//     return Operators;
-// }
-
-std::vector<int>  &channel::getadmin()
-{
-	return Admin;
-}
-
 int channel::getOwner() const
 {
 	return  Owner;
@@ -149,11 +114,6 @@ void  channel::set_topic(const std::string topic)
 	this->Topic = topic;
 }
 
-void channel::set_Admin(const std::vector<int> &admin)
-{
-	this->Admin = admin;
-}
-
 void channel::set_Owner(const int owner)
 {
 	this->Owner = owner;
@@ -163,7 +123,7 @@ void channel::set_Users(const std::vector<int> users)
 {
 	this->Users =  users;
 }
-std::set<int> channel::get_operators() 
+std::set<int> &channel::get_operators() 
 {
     return this->Operators;
 }
@@ -190,9 +150,8 @@ void channel::set_limit(int limit)
 
 channel::~channel()
 {
-	std::cout << "Destrctor" << std::endl;
 }
-// {'i'}
+
 void channel::change_invite_only_mode(std::string& mode) {
     if (mode == "+i") {
         this->mode.insert('i');
@@ -209,10 +168,10 @@ void channel::change_topic_mode(std::string& mode) {
     }
 }
 
-bool channel::change_key_mode(std::vector<std::string>& args, std::string& mode, int fd) {
+bool channel::change_key_mode(std::map<int, client>& clients, std::vector<std::string>& args, std::string& mode, int fd) {
     if (mode == "+k") {
         if (args.size() < 3) {
-            ft_response(fd, "ERR_NEEDMOREPARAMS");
+            ft_response(fd, std::string(ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "CHANGE_KEY_MODE")).c_str());
             return false;
         }
         this->mode.insert('k');
@@ -228,15 +187,13 @@ bool channel::change_key_mode(std::vector<std::string>& args, std::string& mode,
 bool channel::change_operator_mode(std::map<int, client>& clients, std::vector<std::string>& args, std::string& mode, int fd) 
  {
     if (args.size() < 3) {
-        ft_response(fd, "ERR_NEEDMOREPARAMS");
+         ft_response(fd, std::string(ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "CHANGE_OPERATOR_MODE")).c_str());
         return false;
     } 
 
-    std::string username = args[2]; // Le nom de l'utilisateur est le troisième argument
-
-    // Vérifier si l'utilisateur existe
+    std::string username = args[2];
     client* userClient = NULL;
-    int userFd = -1; // Initialisez userFd à une valeur par défaut
+    int userFd = -1;
     for (std::map<int, client>::iterator it = clients.begin(); it != clients.end(); ++it) {
         if (it->second.get_nickname() == username) {
             userClient = &(it->second);
@@ -246,17 +203,13 @@ bool channel::change_operator_mode(std::map<int, client>& clients, std::vector<s
     }
 
     if (userClient == NULL) {
-        ft_response(fd, "ERR_NOSUCHNICK");
+        ft_response(fd, std::string(ERR_NOSUCHNICK(clients[fd].get_nickname(), username)).c_str());
         return false;
     }
-
-    // Vérifier si l'utilisateur est membre du canal
     if (!this->is_member(userFd)) {
-        ft_response(fd, "ERR_USERNOTINCHANNEL");
+        ft_response(fd, std::string(ERR_USERNOTINCHANNEL(clients[fd].get_nickname(), username, this->Name)).c_str());
         return false;
     }
-
-    // Modifier les privilèges de l'opérateur en fonction du mode
     if (mode == "+o")
         this->Operators.insert(userFd);
     else
@@ -265,11 +218,11 @@ bool channel::change_operator_mode(std::map<int, client>& clients, std::vector<s
     return true;
 }
 
-bool channel::change_limit_mode(std::vector<std::string>& args, std::string& mode, int fd)
+bool channel::change_limit_mode(std::map<int, client>& clients, std::vector<std::string>& args, std::string& mode, int fd)
 {
      if (mode == "+l") {
             if (args.size() < 3) {
-                ft_response(fd, "ERR_NEEDMOREPARAMS");
+                ft_response(fd, std::string(ERR_NEEDMOREPARAMS(clients[fd].get_nickname(), "CHANGE_LIMIT_MODE")).c_str());
                 return false;
             }
             this->mode.insert('l');

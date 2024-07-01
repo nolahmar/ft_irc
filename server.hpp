@@ -9,31 +9,37 @@
 #include <vector>
 #include <sys/poll.h>
 #define RED "\e[1;31m" 
-#define GREEN "\e[1;32m" 
+#define GREEN "\033[1;32"
 #define YELLOW "\e[1;33m"
-#define BD "\e[1;00m"
+#define BD "\033[0m"
 #define RS "\033[1;35m"
 #define BLEU "\033[1;34m"
 #include <map>
 #include "channel.hpp"
 #include "client.hpp"
-#include "command.hpp"
+#include <csignal> 
 
 class server
 {
     private:
     std::string pass;
+     
+    int serverSocket;
+    int port;
     std::map<int,client>  clients;
+    std::vector<channel *> channels;
+   
     public:
     server();
-    std::vector<channel *> channels;
-    server(std::string p);
-    void ft_server();
-    void signalHandler(int i);
-    void ft_close();
-    int serverSocket;
+    ~server();
     static bool signn;
-
+    server(std::string p, int  port);
+    void ft_server();
+    static void signalHandler(int i);
+    void ft_close();
+    void welcomemsg(void);
+    void ft_free();
+    void ft_remove_chanels(int fd);
 };
 
 #endif

@@ -4,7 +4,7 @@
 
 client::client(): fd(-1), id(-1), ChannelPtr(NULL)
 {
-	state = "none"; // pass - usernam mazl medkhl
+	state = "none";
 }
 
 client::client(const client& original) {
@@ -18,6 +18,7 @@ client::client(const client& original) {
     ChannelPtr = original.ChannelPtr;
     servername = original.servername;
     channels = original.channels;
+    state = original.state;
 }
 
 client& client::operator=(const client& original) {
@@ -41,19 +42,16 @@ void client::write(int fd, const std::string& message) const {
 }
 
 void client::sendMessage(const std::string& message) {
-    // Envoyer le message au socket du client
     std::cout << "fd: " << fd << std::endl;
     send(fd, message.c_str(), message.length(), 0);
 }
 
 void client::invite_to_channel(int fd, std::map<int, client>::iterator& invitedClient, channel* channel) {
     int target = invitedClient->first;
-    // Envoyer un message d'invitation à l'utilisateur invité !!! Merciiii
     write(target, "INVITE " + get_nickname() + " " + channel->get_name());
     // Join target to the target channel
     invitedClient->second.channels.push_back(channel);
     channel->addUser(target);
-    // Envoyer un message de confirmation à l'utilisateur qui a envoyé l'invitation !!! Merciiii
     write(fd, RPL_INVITING(get_nickname(), channel->get_name()));
 }
 
@@ -73,15 +71,14 @@ void client::remove_channel(const channel* channelToRemove)
 
 
 
-void            client::write(const std::string& message,int fd) const
+void     client::write(const std::string& message,int fd) const
 {
     std::string buffer = message + "\r\n";
-    std::cout << "buffer ===========>" << buffer << "||" << std::endl;
     if (send(fd, buffer.c_str(), buffer.length(), 0) < 0)
         throw std::runtime_error("Error while sending a message to a client!");
 }
 
-void            client::reply(const std::string& reply,int fd)
+void     client::reply(const std::string& reply,int fd)
 {
 
     this->write(":" + get_prefix() + " " + reply,fd);
@@ -107,8 +104,6 @@ std::string client::get_prefix() const
 
     return nickname + user + host;
 }
-
-
 
 std::string client::is_registered()
 {
@@ -198,7 +193,6 @@ void           client:: set_servername(const std::string    server_n)
 }
 
 void client::close_connection() {
-    // Fermeture du socket
     close(fd);
     state = "offline";
 }
@@ -209,5 +203,19 @@ std::set<std::string> &client::get_operators() {
 
 client::~client()
 {
-	std::cout << "Destrctor" << std::endl;
+
+}
+
+
+ void    client::set_bufferFile(std::string sender, std::string &buffer, const std::string &filename)
+ {
+	std::vector<std::string> info;
+	info.push_back(sender);
+	info.push_back(filename);
+	bufferFile[info] = buffer;
+ }
+
+ std::map<std::vector<std::string>, std::string> &client::get_dataBuffer()
+{
+	return bufferFile;
 }
